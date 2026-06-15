@@ -124,7 +124,7 @@ export default async function IllustrationDetailPage({ params }: PageProps) {
               <ul className="space-y-1 text-xs leading-relaxed text-muted">
                 <li>・商用利用OK</li>
                 <li>・クレジット表記不要</li>
-                <li>・改変OK</li>
+                <li>・改変NG</li>
               </ul>
             </div>
           </div>

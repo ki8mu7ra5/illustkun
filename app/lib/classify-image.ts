@@ -1,5 +1,38 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { IMAGE_CLASSIFY_PROMPT, type ImageClassification } from "./classify";
+import {
+  ACTION_CATEGORY_TAGS,
+  IMAGE_CLASSIFY_PROMPT,
+  type ActionCategoryTag,
+  type ImageClassification,
+} from "./classify";
+
+function isActionCategoryTag(tag: string): tag is ActionCategoryTag {
+  return ACTION_CATEGORY_TAGS.includes(tag as ActionCategoryTag);
+}
+
+function normalizeActionTags(tags: string[]): ActionCategoryTag[] {
+  const valid = tags.filter(isActionCategoryTag);
+  return valid.length > 0 ? valid : ["生活"];
+}
+
+function inferActionCategoryTag(action: string): ActionCategoryTag {
+  if (/スポーツ|運動|サッカー|野球|バスケ|水泳|スキー|テニス|バレー|ゴルフ|走る|走っ/.test(action)) {
+    return "スポーツ";
+  }
+  if (/食べ|飲|料理|ラーメン|コーヒー|食事/.test(action)) {
+    return "食べる";
+  }
+  if (/乗|運転|電車|バス|自転車|車|飛行機|船/.test(action)) {
+    return "乗り物";
+  }
+  if (/勉強|読書|仕事|書い|指し|将棋/.test(action)) {
+    return "勉強";
+  }
+  if (/音楽|ギター|ピアノ|演奏|歌|ダンス/.test(action)) {
+    return "音楽";
+  }
+  return "生活";
+}
 
 function parseClassification(text: string): ImageClassification {
   const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -17,9 +50,11 @@ function parseClassification(text: string): ImageClassification {
     genre: String(parsed.genre).trim(),
     sub_genre: String(parsed.sub_genre).trim(),
     action: String(parsed.action).trim(),
-    tags: Array.isArray(parsed.tags)
-      ? parsed.tags.map((tag) => String(tag).trim()).filter(Boolean).slice(0, 5)
-      : [],
+    tags: normalizeActionTags(
+      Array.isArray(parsed.tags)
+        ? parsed.tags.map((tag) => String(tag).trim()).filter(Boolean)
+        : [],
+    ),
     description: String(parsed.description).trim().slice(0, 30),
   };
 }
@@ -74,7 +109,7 @@ export function fallbackClassification(
     genre: "動物",
     sub_genre: subject,
     action,
-    tags: [subject, action].filter(Boolean),
+    tags: [inferActionCategoryTag(action)],
     description: `${action}${subject}`.slice(0, 30),
   };
 }

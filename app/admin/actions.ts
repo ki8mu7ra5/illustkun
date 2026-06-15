@@ -28,6 +28,26 @@ export async function getPendingIllustrations(
   return { data: (data ?? []) as IllustrationRecord[] };
 }
 
+export async function getApprovedIllustrations(
+  password: string,
+): Promise<ActionResult<IllustrationRecord[]>> {
+  if (!verifyAdminPassword(password)) {
+    return { error: "認証に失敗しました" };
+  }
+
+  const { data, error } = await adminSupabase
+    .from("illustrations")
+    .select("*")
+    .eq("approved", true)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { data: (data ?? []) as IllustrationRecord[] };
+}
+
 export async function approveIllustration(
   password: string,
   id: string,

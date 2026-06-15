@@ -26,7 +26,7 @@ function inferActionCategoryTag(action: string): ActionCategoryTag {
   ) {
     return TAG_SPORTS;
   }
-  if (/[食飲料理ラーメンコーヒー食事食べ飲み]/.test(action)) {
+  if (/[??????????????????]/.test(action)) {
     return TAG_EAT;
   }
   if (
@@ -81,7 +81,7 @@ export async function classifyImageWithClaude(
   const anthropic = new Anthropic({ apiKey });
 
   const message = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-4-6",
     max_tokens: 512,
     messages: [
       {

@@ -37,6 +37,17 @@ export function buildGenreCategoryHref(genre: string): string {
   return cat ? `/category?cat=${cat}` : "/category";
 }
 
+export const CATEGORY_GENRE_VALUES: Record<string, string[]> = {
+  animal: ["動物", "animal"],
+  food: ["食べ物", "food"],
+  vehicle: ["乗り物", "vehicle"],
+  plant: ["植物", "plant"],
+  person: ["人物", "person"],
+  sports: ["スポーツ", "sports"],
+  music: ["音楽", "music"],
+};
+
+
 export async function fetchApprovedIllustration(
   id: string,
 ): Promise<IllustrationRecord | null> {

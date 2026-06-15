@@ -1,22 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { SiteFooter } from "./components/site-footer";
 import { SiteHeader } from "./components/site-header";
-import { downloadIllustration, downloadImageFromUrl } from "./lib/download";
+import { downloadImageFromUrl } from "./lib/download";
 import { buildCategoryHref } from "./lib/filter-illustrations";
-import { formatRelativeTime, type IllustrationRecord } from "./lib/illustration-db";
 import {
-  ILLUSTRATIONS,
+  CATEGORY_GENRE_VALUES,
+  formatRelativeTime,
+  type IllustrationRecord,
+} from "./lib/illustration-db";
+import {
   TAG_FILTERS,
   TOP_CATEGORY_CHIPS,
   type CategoryKey,
-  type Illustration,
   type IllustrationTag,
 } from "./lib/illustrations";
-import { normalize } from "./lib/normalize";
 import { supabase } from "./lib/supabase";
+
+const ILLUSTRATION_LIST_SELECT =
+  "id, title, image_url, genre, sub_genre, subject, created_at";
 
 const SAMPLE_CHIPS = [
   { action: "電車を運転している", subject: "猫", label: "電車を運転している猫" },
@@ -56,69 +60,37 @@ type GeneratedResult = {
   image_url: string;
 };
 
-function matchesKeyword(item: Illustration, searchAction: string, searchSubject: string) {
-  const normActionQuery = normalize(searchAction.trim());
-  const normSubjectQuery = normalize(searchSubject.trim());
-
-  const actionOk =
-    !normActionQuery ||
-    normalize(item.action).includes(normActionQuery) ||
-    normalize(item.title).includes(normActionQuery);
-
-  const subjectOk =
-    !normSubjectQuery ||
-    normalize(item.subject).includes(normSubjectQuery) ||
-    normalize(item.title).includes(normSubjectQuery);
-
-  return actionOk && subjectOk;
-}
-
-function IllustrationCard({ item }: { item: Illustration }) {
-  return (
-    <article className="group cursor-pointer overflow-hidden rounded-xl border border-border bg-card transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]">
-      <div className="relative flex aspect-square items-center justify-center border-b border-border bg-background-secondary text-4xl">
-        {item.emoji}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            downloadIllustration(item.emoji, item.title);
-          }}
-          className="absolute bottom-1.5 right-1.5 rounded-md bg-foreground px-2 py-1 text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100"
-        >
-          DL
-        </button>
-      </div>
-      <div className="px-2.5 py-2">
-        <h3 className="mb-0.5 text-[11px] font-semibold leading-snug">{item.title}</h3>
-        <p className="text-[10px] text-muted-light">
-          {item.subject}・{item.time}
-        </p>
-      </div>
-    </article>
-  );
-}
-
-function IllustrationGrid({
+function NewDbIllustrationGrid({
   items,
-  emptyMessage = "該当するイラストがありません",
+  emptyMessage = "公開中のイラストはまだありません",
 }: {
-  items: Illustration[];
+  items: IllustrationRecord[];
   emptyMessage?: string;
 }) {
   if (items.length === 0) {
-    return (
-      <p className="col-span-full text-[13px] text-muted-light">{emptyMessage}</p>
-    );
+    return <p className="text-[13px] text-muted-light">{emptyMessage}</p>;
   }
 
   return (
     <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
       {items.map((item) => (
-        <IllustrationCard key={item.id} item={item} />
+        <NewDbIllustrationCard key={item.id} item={item} />
       ))}
     </div>
   );
+}
+
+function DbIllustrationSection({
+  items,
+  loading,
+  emptyMessage,
+}: {
+  items: IllustrationRecord[];
+  loading: boolean;
+  emptyMessage?: string;
+}) {
+  if (loading) return <NewIllustrationSkeletonGrid />;
+  return <NewDbIllustrationGrid items={items} emptyMessage={emptyMessage} />;
 }
 
 function NewIllustrationSkeletonGrid() {
@@ -177,24 +149,6 @@ function NewDbIllustrationCard({ item }: { item: IllustrationRecord }) {
   );
 }
 
-function NewDbIllustrationGrid({ items }: { items: IllustrationRecord[] }) {
-  if (items.length === 0) {
-    return (
-      <p className="text-[13px] text-muted-light">
-        公開中のイラストはまだありません
-      </p>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-      {items.map((item) => (
-        <NewDbIllustrationCard key={item.id} item={item} />
-      ))}
-    </div>
-  );
-}
-
 function SectionLink({ href }: { href: string }) {
   return (
     <Link
@@ -218,16 +172,25 @@ export default function Home() {
   const [currentTag, setCurrentTag] = useState<IllustrationTag>("スポーツ");
   const [newDbItems, setNewDbItems] = useState<IllustrationRecord[]>([]);
   const [newDbLoading, setNewDbLoading] = useState(true);
+  const [categoryItems, setCategoryItems] = useState<IllustrationRecord[]>([]);
+  const [categoryLoading, setCategoryLoading] = useState(true);
+  const [tagItems, setTagItems] = useState<IllustrationRecord[]>([]);
+  const [tagLoading, setTagLoading] = useState(true);
+  const [keywordItems, setKeywordItems] = useState<IllustrationRecord[]>([]);
+  const [keywordLoading, setKeywordLoading] = useState(false);
 
   const actionTrimmed = action.trim();
   const subjectTrimmed = subject.trim();
+  const searchActionTrimmed = searchAction.trim();
+  const searchSubjectTrimmed = searchSubject.trim();
+  const hasKeywordQuery = Boolean(searchActionTrimmed || searchSubjectTrimmed);
 
   useEffect(() => {
     async function fetchNewIllustrations() {
       setNewDbLoading(true);
       const { data, error } = await supabase
         .from("illustrations")
-        .select("id, title, image_url, genre, sub_genre, subject, created_at")
+        .select(ILLUSTRATION_LIST_SELECT)
         .eq("approved", true)
         .order("created_at", { ascending: false })
         .limit(5);
@@ -241,23 +204,97 @@ export default function Home() {
     fetchNewIllustrations();
   }, [generatedResult]);
 
-  const categoryItems = useMemo(() => {
-    if (currentCat !== "animal") return [];
-    return ILLUSTRATIONS.filter((item) => item.genre === currentCat).slice(0, 5);
-  }, [currentCat]);
+  useEffect(() => {
+    async function fetchCategoryIllustrations() {
+      setCategoryLoading(true);
+      const genres = CATEGORY_GENRE_VALUES[currentCat] ?? [currentCat];
+      const { data, error } = await supabase
+        .from("illustrations")
+        .select(ILLUSTRATION_LIST_SELECT)
+        .eq("approved", true)
+        .in("genre", genres)
+        .order("created_at", { ascending: false })
+        .limit(5);
 
-  const tagItems = useMemo(
-    () => ILLUSTRATIONS.filter((item) => item.tag === currentTag).slice(0, 5),
-    [currentTag],
-  );
+      if (!error && data) {
+        setCategoryItems(data as IllustrationRecord[]);
+      } else {
+        setCategoryItems([]);
+      }
+      setCategoryLoading(false);
+    }
 
-  const keywordItems = useMemo(() => {
-    const hasQuery = searchAction.trim() || searchSubject.trim();
-    if (!hasQuery) return [];
-    return ILLUSTRATIONS.filter((item) =>
-      matchesKeyword(item, searchAction, searchSubject),
-    ).slice(0, 5);
-  }, [searchAction, searchSubject]);
+    fetchCategoryIllustrations();
+  }, [currentCat, generatedResult]);
+
+  useEffect(() => {
+    async function fetchTagIllustrations() {
+      setTagLoading(true);
+      const { data, error } = await supabase
+        .from("illustrations")
+        .select(ILLUSTRATION_LIST_SELECT)
+        .eq("approved", true)
+        .contains("tags", [currentTag])
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (!error && data) {
+        setTagItems(data as IllustrationRecord[]);
+      } else {
+        setTagItems([]);
+      }
+      setTagLoading(false);
+    }
+
+    fetchTagIllustrations();
+  }, [currentTag, generatedResult]);
+
+  useEffect(() => {
+    if (!hasKeywordQuery) {
+      setKeywordItems([]);
+      setKeywordLoading(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setKeywordLoading(true);
+
+      let query = supabase
+        .from("illustrations")
+        .select(ILLUSTRATION_LIST_SELECT)
+        .eq("approved", true);
+
+      if (searchActionTrimmed) {
+        query = query.or(
+          `title.ilike.%${searchActionTrimmed}%,action.ilike.%${searchActionTrimmed}%`,
+        );
+      }
+
+      if (searchSubjectTrimmed) {
+        query = query.or(
+          `title.ilike.%${searchSubjectTrimmed}%,subject.ilike.%${searchSubjectTrimmed}%`,
+        );
+      }
+
+      const { data, error } = await query
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (!error && data) {
+        setKeywordItems(data as IllustrationRecord[]);
+      } else {
+        setKeywordItems([]);
+      }
+      setKeywordLoading(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [
+    searchActionTrimmed,
+    searchSubjectTrimmed,
+    hasKeywordQuery,
+    generatedResult,
+  ]);
 
   const previewText =
     !actionTrimmed && !subjectTrimmed ? (
@@ -374,7 +411,7 @@ export default function Home() {
         <section id="category" className="mx-auto max-w-[1100px] px-4 py-10 sm:px-7">
           <div className="mb-1.5 flex items-baseline justify-between">
             <h2 className="text-lg font-bold tracking-tight">📂 カテゴリから探す</h2>
-            <SectionLink href={buildCategoryHref({ cat: "animal" })} />
+            <SectionLink href={buildCategoryHref({ cat: currentCat })} />
           </div>
           <p className="mb-4 text-xs text-muted-light">大まかなジャンルから絞り込めます。</p>
           <div className="mb-4 flex flex-wrap gap-2">
@@ -402,7 +439,11 @@ export default function Home() {
               </button>
             ))}
           </div>
-          <IllustrationGrid items={categoryItems} />
+          <DbIllustrationSection
+            items={categoryItems}
+            loading={categoryLoading}
+            emptyMessage="該当するイラストがありません"
+          />
         </section>
 
         <hr className="border-0 border-t border-border" />
@@ -429,7 +470,11 @@ export default function Home() {
               </button>
             ))}
           </div>
-          <IllustrationGrid items={tagItems} />
+          <DbIllustrationSection
+            items={tagItems}
+            loading={tagLoading}
+            emptyMessage="該当するイラストがありません"
+          />
         </section>
 
         <hr className="border-0 border-t border-border" />
@@ -490,8 +535,12 @@ export default function Home() {
               検索
             </Link>
           </div>
-          {searchAction.trim() || searchSubject.trim() ? (
-            <IllustrationGrid items={keywordItems} />
+          {hasKeywordQuery ? (
+            <DbIllustrationSection
+              items={keywordItems}
+              loading={keywordLoading}
+              emptyMessage="該当するイラストがありません"
+            />
           ) : null}
         </section>
 

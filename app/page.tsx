@@ -120,20 +120,23 @@ export default function Home() {
         {/* 3 & 4. Hero + Generation Form */}
         <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
           <div className="mx-auto max-w-2xl text-center">
-            <p className="mb-4 inline-block rounded-full border border-border bg-white/60 px-4 py-1 text-xs font-medium text-muted">
-              AI イラスト生成サービス
-            </p>
             <h1 className="text-3xl font-bold leading-tight tracking-tight sm:text-5xl">
               世界中の誰か1人にだけ刺さる
               <span className="mt-1 block text-accent-hover">イラスト集</span>
             </h1>
+            <p className="mt-4 text-xs text-muted sm:text-sm">
+              画像の生成及び使用はすべて無料です。商用利用も自由です。
+            </p>
             <p className="mt-4 text-sm text-muted sm:text-base">
-              好きな組み合わせを入力すると、世界に１つだけのイラストが生まれます。作ったイラストは「新着イラスト」で公開され、この世界の誰かが使うかもしれません。
+              あなたのイラストが世界の誰かの心に刺さりますように。そして、世界のどこかに掲載されますように。
             </p>
           </div>
 
           <div className="mx-auto mt-10 max-w-xl rounded-2xl border border-border bg-white p-6 shadow-sm sm:p-8">
             <div className="space-y-4">
+              <p className="text-sm text-muted">
+                好きな組み合わせを入力すると、世界に１つだけのイラストが生まれます。
+              </p>
               <div>
                 <label htmlFor="action" className="mb-1.5 block text-sm font-medium">
                   何をしている？
@@ -195,7 +198,9 @@ export default function Home() {
             <div className="mb-8 flex items-end justify-between">
               <div>
                 <h2 className="text-2xl font-bold sm:text-3xl">新着イラスト</h2>
-                <p className="mt-1 text-sm text-muted">みんなが作ったイラストをチェック</p>
+                <p className="mt-1 text-sm text-muted">
+                  管理人の承認後、世界に公開されます。イラストが公序良俗に反しないかをチェックしています。毎日23時にチェックしています。
+                </p>
               </div>
               <a href="#" className="hidden text-sm font-medium text-muted hover:text-foreground sm:block">
                 すべて見る →

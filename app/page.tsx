@@ -1,6 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { ACTION_FILTER_TAGS, type ActionTagCategory } from "./lib/classify";
+import { highlightText } from "./lib/highlight";
+import { normalize } from "./lib/normalize";
+
+type Illustration = {
+  id: number;
+  title: string;
+  action: string;
+  subject: string;
+  actionTag: Exclude<ActionTagCategory, "すべて">;
+  emoji: string;
+  meta: string;
+};
 
 const SAMPLE_CHIPS = [
   { action: "電車を運転している", subject: "猫", label: "電車を運転している猫" },
@@ -10,12 +23,52 @@ const SAMPLE_CHIPS = [
   { action: "スキーをしている", subject: "ペンギン", label: "スキーをしているペンギン" },
 ];
 
-const NEW_ILLUSTRATIONS = [
-  { id: 1, title: "勉強しているハムスター", emoji: "🐹", meta: "3分前" },
-  { id: 2, title: "サッカーをするワニ", emoji: "🐊", meta: "12分前" },
-  { id: 3, title: "電車を運転している猫", emoji: "🐈", meta: "28分前" },
-  { id: 4, title: "将棋を指しているゴリラ", emoji: "🦍", meta: "1時間前" },
-  { id: 5, title: "スキーをするペンギン", emoji: "🐧", meta: "2時間前" },
+const NEW_ILLUSTRATIONS: Illustration[] = [
+  {
+    id: 1,
+    title: "勉強しているハムスター",
+    action: "勉強している",
+    subject: "ハムスター",
+    actionTag: "勉強仕事",
+    emoji: "🐹",
+    meta: "3分前",
+  },
+  {
+    id: 2,
+    title: "サッカーをするワニ",
+    action: "サッカーをする",
+    subject: "鰐",
+    actionTag: "スポーツ系",
+    emoji: "🐊",
+    meta: "12分前",
+  },
+  {
+    id: 3,
+    title: "電車を運転している猫",
+    action: "電車を運転している",
+    subject: "猫",
+    actionTag: "乗り物系",
+    emoji: "🐈",
+    meta: "28分前",
+  },
+  {
+    id: 4,
+    title: "将棋を指しているゴリラ",
+    action: "将棋を指している",
+    subject: "ゴリラ",
+    actionTag: "音楽趣味",
+    emoji: "🦍",
+    meta: "1時間前",
+  },
+  {
+    id: 5,
+    title: "スキーをするペンギン",
+    action: "スキーをする",
+    subject: "ペンギン",
+    actionTag: "スポーツ系",
+    emoji: "🐧",
+    meta: "2時間前",
+  },
 ];
 
 const CATEGORIES = [
@@ -60,13 +113,87 @@ function scrollToGenerate() {
   document.getElementById("generate")?.scrollIntoView({ behavior: "smooth" });
 }
 
+function matchesSearch(
+  item: Illustration,
+  searchAction: string,
+  searchSubject: string,
+): boolean {
+  const normActionQuery = normalize(searchAction.trim());
+  const normSubjectQuery = normalize(searchSubject.trim());
+
+  if (!normActionQuery && !normSubjectQuery) return true;
+
+  const normTitle = normalize(item.title);
+  const normAction = normalize(item.action);
+  const normSubject = normalize(item.subject);
+
+  const actionMatch =
+    !normActionQuery ||
+    normAction.includes(normActionQuery) ||
+    normTitle.includes(normActionQuery);
+
+  const subjectMatch =
+    !normSubjectQuery ||
+    normSubject.includes(normSubjectQuery) ||
+    normTitle.includes(normSubjectQuery);
+
+  return actionMatch && subjectMatch;
+}
+
+function shuffleArray<T>(array: T[]): T[] {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 export default function Home() {
   const [action, setAction] = useState("");
   const [subject, setSubject] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [searchAction, setSearchAction] = useState("");
+  const [searchSubject, setSearchSubject] = useState("");
+  const [activeFilterTag, setActiveFilterTag] = useState<ActionTagCategory>("すべて");
+  const [shuffledIds, setShuffledIds] = useState<number[] | null>(null);
 
   const actionTrimmed = action.trim();
   const subjectTrimmed = subject.trim();
+  const searchActionTrimmed = searchAction.trim();
+  const searchSubjectTrimmed = searchSubject.trim();
+
+  const filteredIllustrations = useMemo(() => {
+    return NEW_ILLUSTRATIONS.filter((item) => {
+      if (activeFilterTag !== "すべて" && item.actionTag !== activeFilterTag) {
+        return false;
+      }
+      return matchesSearch(item, searchAction, searchSubject);
+    });
+  }, [searchAction, searchSubject, activeFilterTag]);
+
+  const displayedIllustrations = useMemo(() => {
+    if (!shuffledIds) return filteredIllustrations;
+    const byId = new Map(filteredIllustrations.map((item) => [item.id, item]));
+    return shuffledIds
+      .map((id) => byId.get(id))
+      .filter((item): item is Illustration => item !== undefined);
+  }, [filteredIllustrations, shuffledIds]);
+
+  useEffect(() => {
+    setShuffledIds(null);
+  }, [searchAction, searchSubject, activeFilterTag]);
+
+  const highlightKeywords = [searchActionTrimmed, searchSubjectTrimmed].filter(Boolean);
+
+  const handleRandom = () => {
+    setShuffledIds(shuffleArray(filteredIllustrations.map((item) => item.id)));
+  };
+
+  const handleSearchSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    document.getElementById("gallery-grid")?.scrollIntoView({ behavior: "smooth" });
+  };
 
   const previewText =
     !actionTrimmed && !subjectTrimmed ? (
@@ -156,14 +283,89 @@ export default function Home() {
         <hr className="border-0 border-t border-border" />
 
         <section id="gallery" className="mx-auto max-w-[1100px] px-6 py-10">
+          <form
+            onSubmit={handleSearchSubmit}
+            className="mb-6 rounded-xl border border-border bg-card p-4 sm:p-5"
+          >
+            <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto] sm:items-end">
+              <div>
+                <label
+                  htmlFor="search-action"
+                  className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-light"
+                >
+                  何をしている？
+                </label>
+                <input
+                  id="search-action"
+                  type="text"
+                  value={searchAction}
+                  onChange={(e) => setSearchAction(e.target.value)}
+                  placeholder="例：サッカー、勉強、料理"
+                  className="w-full rounded-[var(--radius-sm)] border-[1.5px] border-border bg-background px-3 py-2.5 text-sm outline-none transition-[border-color,background] focus:border-accent-dark focus:bg-card"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="search-subject"
+                  className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-light"
+                >
+                  何が？
+                </label>
+                <input
+                  id="search-subject"
+                  type="text"
+                  value={searchSubject}
+                  onChange={(e) => setSearchSubject(e.target.value)}
+                  placeholder="例：ネコ、ワニ、ハムスター"
+                  className="w-full rounded-[var(--radius-sm)] border-[1.5px] border-border bg-background px-3 py-2.5 text-sm outline-none transition-[border-color,background] focus:border-accent-dark focus:bg-card"
+                />
+              </div>
+              <button
+                type="submit"
+                className="rounded-[var(--radius-sm)] bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-87"
+              >
+                検索
+              </button>
+              <button
+                type="button"
+                onClick={handleRandom}
+                className="inline-flex items-center justify-center gap-1.5 rounded-[var(--radius-sm)] border-[1.5px] border-foreground bg-transparent px-5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-foreground hover:text-white"
+              >
+                <span aria-hidden>🎲</span>
+                ランダムで見る
+              </button>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {ACTION_FILTER_TAGS.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setActiveFilterTag(tag)}
+                  className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                    activeFilterTag === tag
+                      ? "border-foreground bg-foreground text-white"
+                      : "border-border bg-background-secondary text-muted hover:border-foreground"
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </form>
+
           <div className="mb-4 flex items-baseline justify-between">
-            <h2 className="text-[17px] font-bold tracking-tight">新着イラスト</h2>
+            <div>
+              <h2 className="text-[17px] font-bold tracking-tight">新着イラスト</h2>
+              <p className="mt-1 text-xs text-muted-light">
+                {displayedIllustrations.length}件表示中
+              </p>
+            </div>
             <a href="#" className="text-xs text-muted no-underline">
               すべて見る →
             </a>
           </div>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-            {NEW_ILLUSTRATIONS.map((item) => (
+          <div id="gallery-grid" className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+            {displayedIllustrations.map((item) => (
               <article
                 key={item.id}
                 className="cursor-pointer overflow-hidden rounded-xl border border-border bg-card transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]"
@@ -173,7 +375,7 @@ export default function Home() {
                 </div>
                 <div className="px-2.5 py-2">
                   <h3 className="mb-0.5 text-[11px] font-semibold leading-snug">
-                    {item.title}
+                    {highlightText(item.title, highlightKeywords)}
                   </h3>
                   <p className="text-[10px] text-muted-light">{item.meta}</p>
                 </div>

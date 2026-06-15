@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { createClient } from "@supabase/supabase-js";
 import {
   classifyImageWithClaude,
   fallbackClassification,
 } from "@/app/lib/classify-image";
-import { adminSupabase } from "@/app/lib/supabase-admin";
 
 type GenerateRequestBody = {
   action?: string;
@@ -64,14 +64,30 @@ export async function POST(request: Request) {
     }
 
     const title = `${action} ${subject}`;
-    const fileName = `${Date.now()}.png`;
-    const buffer = Buffer.from(b64, "base64");
 
-    const { data: uploadData, error: uploadError } = await adminSupabase.storage
+    console.log("SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log("SERVICE_KEY exists:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      },
+    );
+
+    const fileName = `${Date.now()}.png`;
+    const base64Image = b64;
+    const buffer = Buffer.from(base64Image, "base64");
+
+    const { error: uploadError } = await supabaseAdmin.storage
       .from("illustrations")
       .upload(fileName, buffer, {
         contentType: "image/png",
-        upsert: false,
+        upsert: true,
       });
 
     if (uploadError) {
@@ -81,9 +97,9 @@ export async function POST(request: Request) {
 
     const {
       data: { publicUrl: image_url },
-    } = adminSupabase.storage.from("illustrations").getPublicUrl(fileName);
+    } = supabaseAdmin.storage.from("illustrations").getPublicUrl(fileName);
 
-    const { error } = await adminSupabase.from("illustrations").insert({
+    const { error } = await supabaseAdmin.from("illustrations").insert({
       title,
       image_url,
       genre: classification.genre,

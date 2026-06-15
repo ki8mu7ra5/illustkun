@@ -285,21 +285,28 @@ export default function Home() {
         }),
       });
 
-      const data = (await response.json()) as GeneratedResult & { error?: string };
+      const result = await response.json();
+      console.log("API result:", result);
 
-      if (!response.ok || !data.image_url) {
-        setGenerateError(
-          data.error || "生成に失敗しました。もう一度お試しください。",
-        );
-        return;
+      if (!response.ok) {
+        throw new Error(result.error || "生成に失敗しました");
       }
 
-      setGeneratedResult({
-        title: data.title,
-        image_url: data.image_url,
-      });
-    } catch {
-      setGenerateError("生成に失敗しました。もう一度お試しください。");
+      if (result.success && result.data?.[0]) {
+        const row = result.data[0] as { title: string; image_url: string };
+        setGeneratedResult({
+          title: row.title,
+          image_url: row.image_url,
+        });
+      } else {
+        throw new Error("生成に失敗しました");
+      }
+    } catch (error) {
+      setGenerateError(
+        error instanceof Error
+          ? error.message
+          : "生成に失敗しました。もう一度お試しください。",
+      );
     } finally {
       setGenerating(false);
     }

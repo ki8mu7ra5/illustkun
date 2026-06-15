@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
     if (!action || !subject) {
       return NextResponse.json(
-        { error: "action ? subject ?????" },
+        { error: "action と subject は必須です" },
         { status: 400 },
       );
     }
@@ -27,16 +27,12 @@ export async function POST(request: Request) {
     const apiKey = process.env.OPENAI_API_KEY?.trim();
     if (!apiKey) {
       return NextResponse.json(
-        {
-          error:
-            "OPENAI_API_KEY ???????????.env.local ????????npm run dev ???????????",
-        },
+        { error: "OPENAI_API_KEY が設定されていません。" },
         { status: 500 },
       );
     }
 
     const openai = new OpenAI({ apiKey });
-
     const prompt = `${action} ${subject}, flat cartoon illustration, simple cute style, transparent background, soft pastel colors, thick outline, no shadow, icon style`;
 
     const imageResponse = await openai.images.generate({
@@ -50,35 +46,12 @@ export async function POST(request: Request) {
     const b64 = imageResponse.data?.[0]?.b64_json;
     if (!b64) {
       return NextResponse.json(
-        { error: "?????????????OpenAI?????????????????" },
+        { error: "画像の生成に失敗しました" },
         { status: 500 },
       );
     }
 
     const base64Image = b64;
-
-    const fileName = `${Date.now()}-${subject}-${action}.png`;
-    const imageBuffer = Buffer.from(base64Image, "base64");
-    const { error: uploadError } = await supabase.storage
-      .from("illustrations")
-      .upload(fileName, imageBuffer, { contentType: "image/png" });
-    if (uploadError) throw uploadError;
-    const { data: urlData } = supabase.storage
-      .from("illustrations")
-      .getPublicUrl(fileName);
-    const imageUrl = urlData.publicUrl;
-
-    console.log("ANTHROPIC_KEY exists:", !!process.env.ANTHROPIC_API_KEY);
-
-    let classification;
-    try {
-      classification = await classifyImageWithClaude(base64Image);
-      console.log("Classification result:", classification);
-    } catch (classifyError) {
-      console.error("Claude classification error:", classifyError);
-      classification = fallbackClassification(action, subject);
-      console.log("Using fallback classification:", classification);
-    }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, "");
     const supabase = createClient(
@@ -86,8 +59,25 @@ export async function POST(request: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
 
-    console.log("SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log("SUPABASE_KEY:", process.env.SUPABASE_SERVICE_ROLE_KEY);
+    const fileName = `${Date.now()}-${subject}-${action}.png`;
+    const imageBuffer = Buffer.from(base64Image, "base64");
+    const { error: uploadError } = await supabase.storage
+      .from("illustrations")
+      .upload(fileName, imageBuffer, { contentType: "image/png" });
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage
+      .from("illustrations")
+      .getPublicUrl(fileName);
+    const imageUrl = urlData.publicUrl;
+
+    let classification;
+    try {
+      classification = await classifyImageWithClaude(base64Image);
+    } catch (classifyError) {
+      console.error("Claude classification error:", classifyError);
+      classification = fallbackClassification(action, subject);
+    }
 
     const { data, error } = await supabase
       .from("illustrations")
@@ -115,8 +105,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Generate API error:", error);
     const message =
-      error instanceof Error ? error.message : "???????????????";
+      error instanceof Error ? error.message : "予期しないエラーが発生しました";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

@@ -68,8 +68,10 @@ export async function POST(request: Request) {
     console.log("SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
     console.log("SERVICE_KEY exists:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, "");
+
     const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      supabaseUrl,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
         auth: {

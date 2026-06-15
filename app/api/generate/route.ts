@@ -64,7 +64,29 @@ export async function POST(request: Request) {
     }
 
     const title = `${action} ${subject}`;
-    const image_url = `data:image/png;base64,${b64}`;
+    const fileName = `${Date.now()}-${action}-${subject}.png`;
+    const imageBuffer = Buffer.from(b64, "base64");
+
+    const { error: uploadError } = await adminSupabase.storage
+      .from("illustrations")
+      .upload(fileName, imageBuffer, {
+        contentType: "image/png",
+        cacheControl: "3600",
+      });
+
+    if (uploadError) {
+      console.error("Storage upload error:", uploadError);
+      return NextResponse.json(
+        {
+          error: `画像のアップロードに失敗しました: ${uploadError.message}。Supabase の SQL Editor で supabase/migrations/003_create_illustrations_storage.sql を実行してください（バケット作成と Storage ポリシー）。`,
+        },
+        { status: 500 },
+      );
+    }
+
+    const {
+      data: { publicUrl: image_url },
+    } = adminSupabase.storage.from("illustrations").getPublicUrl(fileName);
 
     const { error } = await adminSupabase.from("illustrations").insert({
       title,
@@ -82,7 +104,7 @@ export async function POST(request: Request) {
       console.error("Supabase insert error:", error);
       return NextResponse.json(
         {
-          error: `データベースへの保存に失敗しました: ${error.message}。Supabase の SQL Editor で supabase/migrations/002_allow_insert_pending.sql を実行してください。`,
+          error: `データベースへの保存に失敗しました: ${error.message}`,
         },
         { status: 500 },
       );

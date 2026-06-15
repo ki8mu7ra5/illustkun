@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import {
-  classifyImageWithClaude,
-  fallbackClassification,
-} from "@/app/lib/classify-image";
-import { adminSupabase } from "@/app/lib/supabase-admin";
+import { createClient } from "@supabase/supabase-js";
 
 type GenerateRequestBody = {
   action?: string;
@@ -55,50 +51,37 @@ export async function POST(request: Request) {
       );
     }
 
-    let classification;
-    try {
-      classification = await classifyImageWithClaude(b64);
-    } catch (classifyError) {
-      console.error("Claude classification error:", classifyError);
-      classification = fallbackClassification(action, subject);
-    }
+    const base64Image = b64;
 
-    const title = `${action} ${subject}`;
-    const image_url = `data:image/png;base64,${b64}`;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, "");
+    const supabase = createClient(
+      supabaseUrl,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
 
-    const { error } = await adminSupabase.from("illustrations").insert({
-      title,
-      image_url,
-      genre: classification.genre,
-      sub_genre: classification.sub_genre,
-      action,
-      subject,
-      tags: classification.tags,
-      description: classification.description,
-      approved: false,
-    });
+    console.log("SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log("SUPABASE_KEY:", process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+    const { data, error } = await supabase
+      .from("illustrations")
+      .insert([
+        {
+          title: `${action} ${subject}`,
+          image_url: `data:image/png;base64,${base64Image}`,
+          action: action,
+          subject: subject,
+          genre: "animal",
+          approved: false,
+        },
+      ])
+      .select();
 
     if (error) {
-      console.error("Supabase insert error:", error);
-      return NextResponse.json(
-        {
-          error: `データベースへの保存に失敗しました: ${error.message}`,
-        },
-        { status: 500 },
-      );
+      console.error("Insert error details:", JSON.stringify(error));
+      throw error;
     }
 
-    return NextResponse.json({
-      title,
-      image_url,
-      action,
-      subject,
-      genre: classification.genre,
-      sub_genre: classification.sub_genre,
-      tags: classification.tags,
-      description: classification.description,
-      approved: false,
-    });
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error("Generate API error:", error);
     const message =

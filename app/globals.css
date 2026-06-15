@@ -2,22 +2,29 @@
 
 :root {
   --background: #f7f6f1;
+  --background-secondary: #efeee8;
   --foreground: #1c1c1a;
+  --card: #ffffff;
+  --muted: #6b6a64;
+  --muted-light: #a8a79f;
   --accent: #e8c547;
-  --accent-hover: #d4b23a;
-  --border: #e0dfd8;
-  --muted: #6b6b66;
+  --accent-dark: #c4a020;
+  --border: rgba(28, 28, 26, 0.08);
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-background-secondary: var(--background-secondary);
   --color-foreground: var(--foreground);
-  --color-accent: var(--accent);
-  --color-accent-hover: var(--accent-hover);
-  --color-border: var(--border);
+  --color-card: var(--card);
   --color-muted: var(--muted);
-  --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI",
-    "Yu Gothic", "Meiryo", system-ui, sans-serif;
+  --color-muted-light: var(--muted-light);
+  --color-accent: var(--accent);
+  --color-accent-dark: var(--accent-dark);
+  --color-border: var(--border);
+  --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP",
+    "Yu Gothic UI", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+  --radius-sm: 7px;
 }
 
 * {
@@ -32,21 +39,5 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
-}
-
-@keyframes marquee {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-.marquee-track {
-  animation: marquee 30s linear infinite;
-}
-
-.marquee-track:hover {
-  animation-play-state: paused;
+  line-height: 1.6;
 }

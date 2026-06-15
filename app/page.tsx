@@ -2,54 +2,51 @@
 
 import { useState } from "react";
 
-const MARQUEE_ITEMS = [
-  "勉強しているハムスター",
-  "電車を運転している猫",
-  "ピアノを弾いているペンギン",
-  "コーヒーを淹れているクマ",
-  "本を読んでいるうさぎ",
-  "自転車に乗っているパンダ",
-];
-
 const SAMPLE_CHIPS = [
-  { action: "勉強している", subject: "ハムスター" },
-  { action: "電車を運転している", subject: "猫" },
-  { action: "ピアノを弾いている", subject: "ペンギン" },
-  { action: "コーヒーを淹れている", subject: "クマ" },
-  { action: "本を読んでいる", subject: "うさぎ" },
-  { action: "自転車に乗っている", subject: "パンダ" },
+  { action: "電車を運転している", subject: "猫", label: "電車を運転している猫" },
+  { action: "勉強している", subject: "ハムスター", label: "勉強しているハムスター" },
+  { action: "サッカーをしている", subject: "ワニ", label: "サッカーをしているワニ" },
+  { action: "将棋を指している", subject: "ゴリラ", label: "将棋を指しているゴリラ" },
+  { action: "スキーをしている", subject: "ペンギン", label: "スキーをしているペンギン" },
 ];
 
 const NEW_ILLUSTRATIONS = [
-  { id: 1, title: "勉強しているハムスター", emoji: "🐹", color: "#FFF3C4" },
-  { id: 2, title: "電車を運転している猫", emoji: "🐱", color: "#E8F4FD" },
-  { id: 3, title: "ピアノを弾いているペンギン", emoji: "🐧", color: "#EDE7F6" },
-  { id: 4, title: "コーヒーを淹れているクマ", emoji: "🐻", color: "#FBE9E7" },
-  { id: 5, title: "本を読んでいるうさぎ", emoji: "🐰", color: "#E8F5E9" },
-  { id: 6, title: "自転車に乗っているパンダ", emoji: "🐼", color: "#F3E5F5" },
+  { id: 1, title: "勉強しているハムスター", emoji: "🐹", meta: "3分前" },
+  { id: 2, title: "サッカーをするワニ", emoji: "🐊", meta: "12分前" },
+  { id: 3, title: "電車を運転している猫", emoji: "🐈", meta: "28分前" },
+  { id: 4, title: "将棋を指しているゴリラ", emoji: "🦍", meta: "1時間前" },
+  { id: 5, title: "スキーをするペンギン", emoji: "🐧", meta: "2時間前" },
 ];
 
 const CATEGORIES = [
-  { name: "動物", status: "published" as const, count: 128, emoji: "🐾" },
-  { name: "食べ物", status: "coming" as const, count: 0, emoji: "🍱" },
-  { name: "乗り物", status: "coming" as const, count: 0, emoji: "🚃" },
+  { name: "動物", emoji: "🐾", status: "active" as const },
+  { name: "食べ物", emoji: "🍜", status: "soon" as const },
+  { name: "乗り物", emoji: "🚃", status: "soon" as const },
+  { name: "植物", emoji: "🌿", status: "soon" as const },
+  { name: "人物", emoji: "👤", status: "soon" as const },
+  { name: "建物", emoji: "🏠", status: "soon" as const },
+  { name: "スポーツ", emoji: "⚽", status: "soon" as const },
+  { name: "音楽", emoji: "🎵", status: "soon" as const },
 ];
 
 const STEPS = [
   {
-    step: "01",
-    title: "組み合わせを入力",
-    description: "「何をしている？」と「何が？」を入力して、世界にひとつだけの組み合わせを作りましょう。",
+    step: "STEP 01",
+    title: "行動と対象を入力",
+    description:
+      "「何をしている？」「何が？」の2項目だけ。プロンプトの知識は一切不要です。",
   },
   {
-    step: "02",
-    title: "生成ボタンを押す",
-    description: "ボタンを押すだけ。AIがあなただけのイラストを生成します。",
+    step: "STEP 02",
+    title: "AIがその場で生成",
+    description:
+      "gpt-image-1が約30秒でイラストを生成。背景透過のPNGで出力されます。",
   },
   {
-    step: "03",
-    title: "イラストが完成",
-    description: "生成されたイラストはギャラリーに保存。ダウンロードも自由自在です。",
+    step: "STEP 03",
+    title: "無料でダウンロード",
+    description:
+      "生成したイラストはすぐDL可能。承認後にサイトに追加され、みんなが使えるようになります。",
   },
 ];
 
@@ -59,12 +56,40 @@ const NAV_LINKS = [
   { label: "使い方", href: "#how-to" },
 ];
 
+function scrollToGenerate() {
+  document.getElementById("generate")?.scrollIntoView({ behavior: "smooth" });
+}
+
 export default function Home() {
   const [action, setAction] = useState("");
   const [subject, setSubject] = useState("");
+  const [generating, setGenerating] = useState(false);
+
+  const actionTrimmed = action.trim();
+  const subjectTrimmed = subject.trim();
+
+  const previewText =
+    !actionTrimmed && !subjectTrimmed ? (
+      "動物と行動を入力してください"
+    ) : (
+      <>
+        <strong className="text-foreground">
+          {actionTrimmed || "___"} {subjectTrimmed || "___"}
+        </strong>
+        {" のイラストを生成します"}
+      </>
+    );
 
   const handleGenerate = () => {
-    alert("生成中...");
+    if (!actionTrimmed || !subjectTrimmed) {
+      alert("行動と対象を両方入力してください");
+      return;
+    }
+    setGenerating(true);
+    setTimeout(() => {
+      setGenerating(false);
+      alert(`「${actionTrimmed} ${subjectTrimmed}」を生成しました！`);
+    }, 2000);
   };
 
   const handleChipClick = (chip: (typeof SAMPLE_CHIPS)[number]) => {
@@ -74,71 +99,137 @@ export default function Home() {
 
   return (
     <div className="min-h-full bg-background text-foreground">
-      {/* 1. Navigation */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-          <a href="#" className="flex items-center gap-2 text-lg font-bold tracking-tight sm:text-xl">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-sm">
-              イ
-            </span>
+      <header className="sticky top-0 z-50 border-b border-border bg-background">
+        <div className="mx-auto flex max-w-[1100px] items-center justify-between px-4 py-3 sm:px-7">
+          <a href="#" className="flex items-center gap-1.5 text-lg font-bold tracking-tight">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-accent" />
             イラストくん
           </a>
-          <nav className="hidden items-center gap-8 text-sm font-medium sm:flex">
+          <nav className="flex items-center gap-3 sm:gap-5">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="text-muted transition-colors hover:text-foreground"
+                className="hidden text-[13px] text-muted no-underline sm:inline"
               >
                 {link.label}
               </a>
             ))}
+            <button
+              type="button"
+              onClick={scrollToGenerate}
+              className="rounded-full bg-foreground px-4 py-1.5 text-[13px] font-medium text-white transition-opacity hover:opacity-85"
+            >
+              イラストを作る
+            </button>
           </nav>
-          <button
-            type="button"
-            className="rounded-full bg-accent px-4 py-2 text-sm font-bold transition-colors hover:bg-accent-hover sm:hidden"
-            onClick={handleGenerate}
-          >
-            生成する
-          </button>
         </div>
       </header>
 
-      {/* 2. Marquee */}
-      <div className="overflow-hidden bg-accent py-2.5">
-        <div className="marquee-track flex w-max whitespace-nowrap">
-          {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
-            <span key={`${item}-${i}`} className="mx-6 text-sm font-medium sm:text-base">
-              {item}
-              <span className="mx-6 opacity-40">·</span>
-            </span>
-          ))}
-        </div>
-      </div>
-
       <main>
-        {/* 3 & 4. Hero + Generation Form */}
-        <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
-          <div className="mx-auto max-w-2xl text-center">
-            <h1 className="text-3xl font-bold leading-tight tracking-tight sm:text-5xl">
-              世界中の誰か1人にだけ刺さる
-              <span className="mt-1 block text-accent-hover">イラスト集</span>
-            </h1>
-            <p className="mt-4 text-xs text-muted sm:text-sm">
-              画像の生成及び使用はすべて無料です。商用利用も自由です。
-            </p>
-            <p className="mt-4 text-sm text-muted sm:text-base">
-              あなたのイラストが世界の誰かの心に刺さりますように。そして、世界のどこかに掲載されますように。
-            </p>
-          </div>
+        <section className="mx-auto max-w-[700px] px-6 py-14 text-center sm:px-6 sm:py-16">
+          <h1 className="mb-4 text-[clamp(28px,5vw,48px)] font-extrabold leading-tight tracking-tight">
+            世界の誰か1人にだけ
+            <br />
+            刺さるイラスト集
+          </h1>
+          <p className="mb-7 text-sm leading-relaxed text-muted">
+            あなたのイラストが世界の誰かの心に刺さりますように。
+            <br />
+            世界のどこかに掲載されますように。
+          </p>
+          <button
+            type="button"
+            onClick={scrollToGenerate}
+            className="inline-flex items-center gap-2 rounded-full bg-foreground px-7 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-85"
+          >
+            ✦ イラストを作る（無料）
+          </button>
+          <span className="mt-2.5 block text-xs text-muted-light">
+            または下のギャラリーから探す
+          </span>
+          <span className="mt-2 inline-block rounded-full border border-border px-3.5 py-1 text-xs text-muted-light">
+            画像の生成・使用はすべて無料　商用利用OK
+          </span>
+        </section>
 
-          <div className="mx-auto mt-10 max-w-xl rounded-2xl border border-border bg-white p-6 shadow-sm sm:p-8">
-            <div className="space-y-4">
-              <p className="text-sm text-muted">
-                好きな組み合わせを入力すると、世界に１つだけのイラストが生まれます。
-              </p>
+        <hr className="border-0 border-t border-border" />
+
+        <section id="gallery" className="mx-auto max-w-[1100px] px-6 py-10">
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2 className="text-[17px] font-bold tracking-tight">新着イラスト</h2>
+            <a href="#" className="text-xs text-muted no-underline">
+              すべて見る →
+            </a>
+          </div>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+            {NEW_ILLUSTRATIONS.map((item) => (
+              <article
+                key={item.id}
+                className="cursor-pointer overflow-hidden rounded-xl border border-border bg-card transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]"
+              >
+                <div className="flex aspect-square items-center justify-center border-b border-border bg-background-secondary text-4xl">
+                  {item.emoji}
+                </div>
+                <div className="px-2.5 py-2">
+                  <h3 className="mb-0.5 text-[11px] font-semibold leading-snug">
+                    {item.title}
+                  </h3>
+                  <p className="text-[10px] text-muted-light">{item.meta}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-muted-light">
+            管理人の承認後、新着イラストに掲載されます。毎日23時頃に更新しています。
+          </p>
+        </section>
+
+        <hr className="border-0 border-t border-border" />
+
+        <section id="categories" className="mx-auto max-w-[1100px] px-6 pb-10 pt-8">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="text-[17px] font-bold tracking-tight">カテゴリから探す</h2>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {CATEGORIES.map((category) => (
+              <div
+                key={category.name}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-[13px] ${
+                  category.status === "active"
+                    ? "cursor-pointer border-foreground bg-foreground text-white"
+                    : "cursor-default border-border bg-card opacity-50"
+                }`}
+              >
+                <span className="text-base">{category.emoji}</span>
+                {category.name}
+                {category.status === "soon" && (
+                  <span className="ml-0.5 rounded-full bg-background-secondary px-1.5 py-px text-[10px] text-muted-light">
+                    近日
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <hr className="border-0 border-t border-border" />
+
+        <section id="generate" className="mx-auto max-w-[1100px] px-6 pb-10 pt-10">
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2 className="text-[17px] font-bold tracking-tight">イラストを作る</h2>
+          </div>
+          <div className="max-w-[600px] rounded-xl border border-border bg-card p-7">
+            <div className="mb-1.5 text-base font-bold">欲しいイラストを入力してください</div>
+            <p className="mb-5 text-[13px] text-muted">
+              「何をしている？」＋「何が？」の2項目だけ。プロンプトの知識は不要です。
+            </p>
+            <div className="mb-3.5 grid grid-cols-1 items-center gap-2.5 sm:grid-cols-[1fr_auto_1fr]">
               <div>
-                <label htmlFor="action" className="mb-1.5 block text-sm font-medium">
+                <label
+                  htmlFor="action"
+                  className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-light"
+                >
                   何をしている？
                 </label>
                 <input
@@ -146,12 +237,21 @@ export default function Home() {
                   type="text"
                   value={action}
                   onChange={(e) => setAction(e.target.value)}
-                  placeholder="例：勉強している、電車を運転している"
-                  className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none transition-shadow focus:ring-2 focus:ring-accent/50"
+                  placeholder="電車を運転している"
+                  className="w-full rounded-[var(--radius-sm)] border-[1.5px] border-border bg-background px-3 py-2.5 text-sm outline-none transition-[border-color,background] focus:border-accent-dark focus:bg-card"
                 />
+                <span className="mt-1 block text-[11px] text-muted-light">
+                  例：サッカーをしている　本を読んでいる
+                </span>
+              </div>
+              <div className="hidden text-center text-xl font-light text-muted-light sm:block">
+                ×
               </div>
               <div>
-                <label htmlFor="subject" className="mb-1.5 block text-sm font-medium">
+                <label
+                  htmlFor="subject"
+                  className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-light"
+                >
                   何が？
                 </label>
                 <input
@@ -159,127 +259,61 @@ export default function Home() {
                   type="text"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  placeholder="例：ハムスター、猫"
-                  className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none transition-shadow focus:ring-2 focus:ring-accent/50"
+                  placeholder="ネコ"
+                  className="w-full rounded-[var(--radius-sm)] border-[1.5px] border-border bg-background px-3 py-2.5 text-sm outline-none transition-[border-color,background] focus:border-accent-dark focus:bg-card"
                 />
-              </div>
-              <button
-                type="button"
-                onClick={handleGenerate}
-                className="w-full rounded-xl bg-accent py-3.5 text-sm font-bold transition-colors hover:bg-accent-hover active:scale-[0.99]"
-              >
-                イラストを生成する
-              </button>
-            </div>
-
-            {/* 5. Sample Chips */}
-            <div className="mt-6 border-t border-border pt-6">
-              <p className="mb-3 text-xs font-medium text-muted">サンプルを試す</p>
-              <div className="flex flex-wrap gap-2">
-                {SAMPLE_CHIPS.map((chip) => (
-                  <button
-                    key={`${chip.action}-${chip.subject}`}
-                    type="button"
-                    onClick={() => handleChipClick(chip)}
-                    className="rounded-full border border-border bg-background px-3 py-1.5 text-xs transition-colors hover:border-accent hover:bg-accent/10 sm:text-sm"
-                  >
-                    {chip.action}
-                    {chip.subject}
-                  </button>
-                ))}
+                <span className="mt-1 block text-[11px] text-muted-light">
+                  例：ハムスター　ゴリラ　ワニ
+                </span>
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* 6. New Illustrations Grid */}
-        <section id="gallery" className="border-t border-border bg-white/50 py-16 sm:py-20">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <div className="mb-8 flex items-end justify-between">
-              <div>
-                <h2 className="text-2xl font-bold sm:text-3xl">新着イラスト</h2>
-                <p className="mt-1 text-sm text-muted">
-                  管理人の承認後、世界に公開されます。イラストが公序良俗に反しないかをチェックしています。毎日23時にチェックしています。
-                </p>
-              </div>
-              <a href="#" className="hidden text-sm font-medium text-muted hover:text-foreground sm:block">
-                すべて見る →
-              </a>
+            <div className="mb-3.5 min-h-6 text-center text-[13px] text-muted">
+              {previewText}
             </div>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6">
-              {NEW_ILLUSTRATIONS.map((item) => (
-                <article
-                  key={item.id}
-                  className="group overflow-hidden rounded-2xl border border-border bg-white transition-shadow hover:shadow-md"
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={generating}
+              className="w-full rounded-[var(--radius-sm)] bg-foreground py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-87 disabled:opacity-60"
+            >
+              {generating
+                ? "⏳ 生成中..."
+                : "✦ このイラストをAIで生成する（無料）"}
+            </button>
+            <p className="mt-2.5 text-center text-[11px] text-muted-light">
+              生成したイラストは承認後にサイトに追加され、みんなが使えるようになります
+            </p>
+            <div className="mt-3.5 flex flex-wrap gap-1.5">
+              {SAMPLE_CHIPS.map((chip) => (
+                <button
+                  key={chip.label}
+                  type="button"
+                  onClick={() => handleChipClick(chip)}
+                  className="cursor-pointer rounded-full border border-border bg-background-secondary px-3 py-1.5 text-xs text-muted transition-all hover:border-foreground hover:bg-foreground hover:text-white"
                 >
-                  <div
-                    className="flex aspect-square items-center justify-center text-5xl transition-transform group-hover:scale-105 sm:text-6xl"
-                    style={{ backgroundColor: item.color }}
-                  >
-                    {item.emoji}
-                  </div>
-                  <div className="p-3 sm:p-4">
-                    <h3 className="text-xs font-medium leading-snug sm:text-sm">{item.title}</h3>
-                  </div>
-                </article>
+                  {chip.label}
+                </button>
               ))}
             </div>
           </div>
         </section>
 
-        {/* 7. Categories */}
-        <section id="categories" className="py-16 sm:py-20">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <h2 className="text-2xl font-bold sm:text-3xl">カテゴリ</h2>
-            <p className="mt-1 text-sm text-muted">ジャンル別にイラストを探す</p>
-            <div className="mt-8 grid gap-4 sm:grid-cols-3 sm:gap-6">
-              {CATEGORIES.map((category) => (
-                <div
-                  key={category.name}
-                  className={`relative overflow-hidden rounded-2xl border p-6 transition-shadow ${
-                    category.status === "published"
-                      ? "border-border bg-white hover:shadow-md"
-                      : "border-dashed border-border bg-background opacity-75"
-                  }`}
-                >
-                  <span className="text-3xl">{category.emoji}</span>
-                  <h3 className="mt-3 text-lg font-bold">{category.name}</h3>
-                  {category.status === "published" ? (
-                    <>
-                      <p className="mt-1 text-sm text-muted">{category.count} 枚のイラスト</p>
-                      <span className="mt-3 inline-block rounded-full bg-accent/20 px-3 py-1 text-xs font-medium">
-                        公開中
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <p className="mt-1 text-sm text-muted">準備中です</p>
-                      <span className="mt-3 inline-block rounded-full bg-foreground/5 px-3 py-1 text-xs font-medium text-muted">
-                        近日公開
-                      </span>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* 8. How to Use - 3 Steps */}
-        <section id="how-to" className="bg-foreground py-16 text-background sm:py-20">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold sm:text-3xl">使い方</h2>
-              <p className="mt-2 text-sm text-background/60">3ステップで完成</p>
-            </div>
-            <div className="mt-12 grid gap-8 sm:grid-cols-3 sm:gap-6">
+        <section id="how-to" className="bg-foreground px-6 py-12">
+          <div className="mx-auto max-w-[900px]">
+            <h2 className="mb-1.5 text-[22px] font-extrabold tracking-tight text-white">
+              どうやって使うの？
+            </h2>
+            <p className="mb-8 text-[13px] text-white/40">
+              3ステップで欲しいイラストがすぐ手に入ります
+            </p>
+            <div className="grid gap-5 sm:grid-cols-3">
               {STEPS.map((step) => (
-                <div key={step.step} className="relative rounded-2xl border border-background/10 p-6">
-                  <span className="text-4xl font-bold text-accent">{step.step}</span>
-                  <h3 className="mt-4 text-lg font-bold">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-background/70">
-                    {step.description}
-                  </p>
+                <div key={step.step}>
+                  <div className="mb-2 text-[11px] font-bold tracking-widest text-accent">
+                    {step.step}
+                  </div>
+                  <h3 className="mb-1.5 text-[15px] font-bold text-white">{step.title}</h3>
+                  <p className="text-xs leading-relaxed text-white/50">{step.description}</p>
                 </div>
               ))}
             </div>
@@ -287,33 +321,21 @@ export default function Home() {
         </section>
       </main>
 
-      {/* 9. Footer */}
-      <footer className="border-t border-border py-10">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
-            <div className="flex items-center gap-2 font-bold">
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-xs">
-                イ
-              </span>
-              イラストくん
-            </div>
-            <nav className="flex flex-wrap justify-center gap-6 text-sm text-muted">
-              {NAV_LINKS.map((link) => (
-                <a key={link.href} href={link.href} className="hover:text-foreground">
-                  {link.label}
-                </a>
-              ))}
-              <a href="#" className="hover:text-foreground">
-                利用規約
-              </a>
-              <a href="#" className="hover:text-foreground">
-                プライバシーポリシー
-              </a>
-            </nav>
-          </div>
-          <p className="mt-8 text-center text-xs text-muted">
-            © {new Date().getFullYear()} イラストくん. All rights reserved.
-          </p>
+      <footer className="flex flex-col items-center justify-between gap-3 border-t border-border px-6 py-6 sm:flex-row sm:px-7">
+        <div className="text-[15px] font-bold">イラストくん</div>
+        <nav className="flex gap-4">
+          <a href="#" className="text-xs text-muted-light no-underline">
+            利用規約
+          </a>
+          <a href="#" className="text-xs text-muted-light no-underline">
+            プライバシーポリシー
+          </a>
+          <a href="#" className="text-xs text-muted-light no-underline">
+            お問い合わせ
+          </a>
+        </nav>
+        <div className="text-xs text-muted-light">
+          © {new Date().getFullYear()} イラストくん
         </div>
       </footer>
     </div>

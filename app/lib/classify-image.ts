@@ -26,7 +26,7 @@ function inferActionCategoryTag(action: string): ActionCategoryTag {
   ) {
     return TAG_SPORTS;
   }
-  if (/[\u98df\u98f2\u6599\u7406\u30e9\u30fc\u30e1\u30f3\u30b3\u30fc\u30d2\u30fc\u98df\u4e8b]/.test(action)) {
+  if (/[食飲料理ラーメンコーヒー食事食べ飲み]/.test(action)) {
     return TAG_EAT;
   }
   if (

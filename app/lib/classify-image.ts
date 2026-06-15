@@ -6,44 +6,55 @@ import {
   type ImageClassification,
 } from "./classify";
 
+const [TAG_SPORTS, TAG_EAT, TAG_VEHICLE, TAG_STUDY, TAG_MUSIC, TAG_LIFE] =
+  ACTION_CATEGORY_TAGS;
+
 function isActionCategoryTag(tag: string): tag is ActionCategoryTag {
   return ACTION_CATEGORY_TAGS.includes(tag as ActionCategoryTag);
 }
 
 function normalizeActionTags(tags: string[]): ActionCategoryTag[] {
   const valid = tags.filter(isActionCategoryTag);
-  return valid.length > 0 ? valid : ["逕滓ｴｻ"];
+  return valid.length > 0 ? valid : [TAG_LIFE];
 }
 
 function inferActionCategoryTag(action: string): ActionCategoryTag {
-  if (/繧ｹ繝昴・繝л驕句虚|繧ｵ繝・き繝ｼ|驥守帥|繝舌せ繧ｱ|豌ｴ豕ｳ|繧ｹ繧ｭ繝ｼ|繝・ル繧ｹ|繝舌Ξ繝ｼ|繧ｴ繝ｫ繝怖襍ｰ繧弓襍ｰ縺｣/.test(action)) {
-    return "繧ｹ繝昴・繝・;
+  if (
+    /[\u30b9\u30dd\u30fc\u30c4\u904b\u52d5\u30b5\u30c3\u30ab\u30fc\u91ce\u7403\u30d0\u30b9\u30b1\u6c34\u6cf3\u30b9\u30ad\u30fc\u30c6\u30cb\u30b9\u30d0\u30ec\u30fc\u30b4\u30eb\u30d5\u8d70]/.test(
+      action,
+    )
+  ) {
+    return TAG_SPORTS;
   }
-  if (/鬟溘∋|鬟ｲ|譁咏炊|繝ｩ繝ｼ繝｡繝ｳ|繧ｳ繝ｼ繝偵・|鬟滉ｺ・.test(action)) {
-    return "鬟溘∋繧・;
+  if (/[\u98df\u98f2\u6599\u7406\u30e9\u30fc\u30e1\u30f3\u30b3\u30fc\u30d2\u30fc\u98df\u4e8b]/.test(action)) {
+    return TAG_EAT;
   }
-  if (/荵慾驕玖ｻ｢|髮ｻ霆掛繝舌せ|閾ｪ霆｢霆掛霆掛鬟幄｡梧ｩ毫闊ｹ/.test(action)) {
-    return "荵励ｊ迚ｩ";
+  if (
+    /[\u4e57\u904b\u8ee2\u96fb\u8eca\u30d0\u30b9\u81ea\u8ee2\u8eca\u98db\u884c\u6a5f\u8239]/.test(
+      action,
+    )
+  ) {
+    return TAG_VEHICLE;
   }
-  if (/蜍牙ｼｷ|隱ｭ譖ｸ|莉穂ｺ弓譖ｸ縺л謖・＠|蟆・｣・.test(action)) {
-    return "蜍牙ｼｷ";
+  if (/[\u52c9\u5f37\u8aad\u66f8\u4ed5\u4e8b\u6307\u5c06\u68cb]/.test(action)) {
+    return TAG_STUDY;
   }
-  if (/髻ｳ讌ｽ|繧ｮ繧ｿ繝ｼ|繝斐い繝旨貍泌･楯豁芸繝繝ｳ繧ｹ/.test(action)) {
-    return "髻ｳ讌ｽ";
+  if (/[\u97f3\u697d\u30ae\u30bf\u30fc\u30d4\u30a2\u30ce\u6f14\u594f\u6b4c\u30c0\u30f3\u30b9]/.test(action)) {
+    return TAG_MUSIC;
   }
-  return "逕滓ｴｻ";
+  return TAG_LIFE;
 }
 
 function parseClassification(text: string): ImageClassification {
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    throw new Error("蛻・｡樒ｵ先棡縺ｮJSON縺瑚ｦ九▽縺九ｊ縺ｾ縺帙ｓ縺ｧ縺励◆");
+    throw new Error("Classification JSON not found");
   }
 
   const parsed = JSON.parse(jsonMatch[0]) as Partial<ImageClassification>;
 
   if (!parsed.genre || !parsed.sub_genre || !parsed.action || !parsed.description) {
-    throw new Error("蛻・｡樒ｵ先棡縺ｫ蠢・医ヵ繧｣繝ｼ繝ｫ繝峨′荳崎ｶｳ縺励※縺・∪縺・);
+    throw new Error("Classification response missing required fields");
   }
 
   return {
@@ -64,13 +75,13 @@ export async function classifyImageWithClaude(
 ): Promise<ImageClassification> {
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY 縺瑚ｨｭ螳壹＆繧後※縺・∪縺帙ｓ");
+    throw new Error("ANTHROPIC_API_KEY is not configured");
   }
 
   const anthropic = new Anthropic({ apiKey });
 
   const message = await anthropic.messages.create({
-    model: "claude-sonnet-4-5",
+    model: "claude-sonnet-4-20250514",
     max_tokens: 512,
     messages: [
       {
@@ -95,7 +106,7 @@ export async function classifyImageWithClaude(
 
   const textBlock = message.content.find((block) => block.type === "text");
   if (!textBlock || textBlock.type !== "text") {
-    throw new Error("Claude API 縺九ｉ繝・く繧ｹ繝亥ｿ懃ｭ斐′縺ゅｊ縺ｾ縺帙ｓ縺ｧ縺励◆");
+    throw new Error("Claude API returned no text response");
   }
 
   return parseClassification(textBlock.text);
@@ -106,7 +117,7 @@ export function fallbackClassification(
   subject: string,
 ): ImageClassification {
   return {
-    genre: "蜍慕黄",
+    genre: "\u52d5\u7269",
     sub_genre: subject,
     action,
     tags: [inferActionCategoryTag(action)],

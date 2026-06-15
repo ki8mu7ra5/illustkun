@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
     if (!action || !subject) {
       return NextResponse.json(
-        { error: "action と subject は必須です" },
+        { error: "action ? subject ?????" },
         { status: 400 },
       );
     }
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "OPENAI_API_KEY が設定されていません。.env.local を保存したあと、npm run dev を再起動してください。",
+            "OPENAI_API_KEY ???????????.env.local ????????npm run dev ???????????",
         },
         { status: 500 },
       );
@@ -50,12 +50,23 @@ export async function POST(request: Request) {
     const b64 = imageResponse.data?.[0]?.b64_json;
     if (!b64) {
       return NextResponse.json(
-        { error: "画像の生成に失敗しました（OpenAIから画像データが返りませんでした）" },
+        { error: "?????????????OpenAI?????????????????" },
         { status: 500 },
       );
     }
 
     const base64Image = b64;
+
+    const fileName = `${Date.now()}-${subject}-${action}.png`;
+    const imageBuffer = Buffer.from(base64Image, "base64");
+    const { error: uploadError } = await supabase.storage
+      .from("illustrations")
+      .upload(fileName, imageBuffer, { contentType: "image/png" });
+    if (uploadError) throw uploadError;
+    const { data: urlData } = supabase.storage
+      .from("illustrations")
+      .getPublicUrl(fileName);
+    const imageUrl = urlData.publicUrl;
 
     console.log("ANTHROPIC_KEY exists:", !!process.env.ANTHROPIC_API_KEY);
 
@@ -83,7 +94,7 @@ export async function POST(request: Request) {
       .insert([
         {
           title: `${action} ${subject}`,
-          image_url: `data:image/png;base64,${base64Image}`,
+          image_url: imageUrl,
           action,
           subject,
           genre: classification.genre,
@@ -104,7 +115,8 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Generate API error:", error);
     const message =
-      error instanceof Error ? error.message : "予期しないエラーが発生しました";
+      error instanceof Error ? error.message : "???????????????";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+

@@ -106,4 +106,6 @@ export async function POST(request: Request) {
     console.error("Generate API error:", error);
     const message =
       error instanceof Error ? error.message : "予期しないエラーが発生しました";
-    return
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}

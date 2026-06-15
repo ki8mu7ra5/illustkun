@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
+import {
+  classifyImageWithClaude,
+  fallbackClassification,
+} from "@/app/lib/classify-image";
 
 type GenerateRequestBody = {
   action?: string;
@@ -53,6 +57,18 @@ export async function POST(request: Request) {
 
     const base64Image = b64;
 
+    console.log("ANTHROPIC_KEY exists:", !!process.env.ANTHROPIC_API_KEY);
+
+    let classification;
+    try {
+      classification = await classifyImageWithClaude(base64Image);
+      console.log("Classification result:", classification);
+    } catch (classifyError) {
+      console.error("Claude classification error:", classifyError);
+      classification = fallbackClassification(action, subject);
+      console.log("Using fallback classification:", classification);
+    }
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, "");
     const supabase = createClient(
       supabaseUrl,
@@ -68,9 +84,12 @@ export async function POST(request: Request) {
         {
           title: `${action} ${subject}`,
           image_url: `data:image/png;base64,${base64Image}`,
-          action: action,
-          subject: subject,
-          genre: "animal",
+          action,
+          subject,
+          genre: classification.genre,
+          sub_genre: classification.sub_genre,
+          tags: classification.tags,
+          description: classification.description,
           approved: false,
         },
       ])

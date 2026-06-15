@@ -124,7 +124,7 @@ export default function Home() {
               AI イラスト生成サービス
             </p>
             <h1 className="text-3xl font-bold leading-tight tracking-tight sm:text-5xl">
-              世界中で1人だけが使うかもしれない
+              世界中の誰か1人にだけ刺さる
               <span className="mt-1 block text-accent-hover">イラスト集</span>
             </h1>
             <p className="mt-4 text-sm text-muted sm:text-base">

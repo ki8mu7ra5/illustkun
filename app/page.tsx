@@ -118,25 +118,14 @@ function NewDbIllustrationCard({ item }: { item: IllustrationRecord }) {
       href={`/illustration/${item.id}`}
       className="block text-inherit no-underline"
     >
-      <article className="group cursor-pointer overflow-hidden rounded-xl border border-border bg-card transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]">
-        <div className="relative aspect-square border-b border-border bg-background-secondary">
+      <article className="cursor-pointer overflow-hidden rounded-xl border border-border bg-card transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]">
+        <div className="aspect-square border-b border-border bg-background-secondary">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={item.image_url}
             alt={item.title}
             className="h-full w-full object-contain"
           />
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              downloadImageFromUrl(item.image_url, item.title);
-            }}
-            className="absolute bottom-1.5 right-1.5 rounded-md bg-foreground px-2 py-1 text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100"
-          >
-            DL
-          </button>
         </div>
         <div className="px-2.5 py-2">
           <h3 className="mb-0.5 text-[11px] font-semibold leading-snug">{item.title}</h3>

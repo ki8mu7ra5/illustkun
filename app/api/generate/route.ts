@@ -64,24 +64,19 @@ export async function POST(request: Request) {
     }
 
     const title = `${action} ${subject}`;
-    const fileName = `${Date.now()}-${action}-${subject}.png`;
-    const imageBuffer = Buffer.from(b64, "base64");
+    const fileName = `${Date.now()}.png`;
+    const buffer = Buffer.from(b64, "base64");
 
-    const { error: uploadError } = await adminSupabase.storage
+    const { data: uploadData, error: uploadError } = await adminSupabase.storage
       .from("illustrations")
-      .upload(fileName, imageBuffer, {
+      .upload(fileName, buffer, {
         contentType: "image/png",
-        cacheControl: "3600",
+        upsert: false,
       });
 
     if (uploadError) {
-      console.error("Storage upload error:", uploadError);
-      return NextResponse.json(
-        {
-          error: `画像のアップロードに失敗しました: ${uploadError.message}。Supabase の SQL Editor で supabase/migrations/003_create_illustrations_storage.sql を実行してください（バケット作成と Storage ポリシー）。`,
-        },
-        { status: 500 },
-      );
+      console.error("Upload error:", uploadError);
+      throw new Error(`Storage upload failed: ${uploadError.message}`);
     }
 
     const {

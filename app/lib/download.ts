@@ -17,3 +17,10 @@ export function downloadIllustration(emoji: string, title: string) {
   link.href = canvas.toDataURL("image/png");
   link.click();
 }
+
+export function downloadImageFromUrl(imageUrl: string, title: string) {
+  const link = document.createElement("a");
+  link.download = `${title}.png`;
+  link.href = imageUrl;
+  link.click();
+}

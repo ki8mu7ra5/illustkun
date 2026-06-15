@@ -1,0 +1,44 @@
+import { NextResponse } from "next/server";
+import { assertAdminRequest } from "@/app/lib/admin-auth";
+import { adminSupabase } from "@/app/lib/supabase-admin";
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const authError = assertAdminRequest(request);
+  if (authError) return authError;
+
+  const { id } = await params;
+
+  const { data, error } = await adminSupabase
+    .from("illustrations")
+    .update({ approved: true })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(data);
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const authError = assertAdminRequest(request);
+  if (authError) return authError;
+
+  const { id } = await params;
+
+  const { error } = await adminSupabase.from("illustrations").delete().eq("id", id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}

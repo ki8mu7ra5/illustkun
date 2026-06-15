@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SiteFooter } from "./components/site-footer";
 import { SiteHeader } from "./components/site-header";
-import { downloadIllustration } from "./lib/download";
+import { downloadIllustration, downloadImageFromUrl } from "./lib/download";
 import { buildCategoryHref } from "./lib/filter-illustrations";
+import { formatRelativeTime, type IllustrationRecord } from "./lib/illustration-db";
 import {
   ILLUSTRATIONS,
   TAG_FILTERS,
@@ -15,6 +16,7 @@ import {
   type IllustrationTag,
 } from "./lib/illustrations";
 import { normalize } from "./lib/normalize";
+import { supabase } from "./lib/supabase";
 
 const SAMPLE_CHIPS = [
   { action: "電車を運転している", subject: "猫", label: "電車を運転している猫" },
@@ -48,6 +50,11 @@ const STEPS = [
 function scrollToGenerate() {
   document.getElementById("generate")?.scrollIntoView({ behavior: "smooth" });
 }
+
+type GeneratedResult = {
+  title: string;
+  image_url: string;
+};
 
 function matchesKeyword(item: Illustration, searchAction: string, searchSubject: string) {
   const normActionQuery = normalize(searchAction.trim());
@@ -114,6 +121,74 @@ function IllustrationGrid({
   );
 }
 
+function NewIllustrationSkeletonGrid() {
+  return (
+    <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <div
+          key={index}
+          className="overflow-hidden rounded-xl border border-border bg-card"
+        >
+          <div className="aspect-square animate-pulse bg-background-secondary" />
+          <div className="space-y-2 p-2.5">
+            <div className="h-3 animate-pulse rounded bg-background-secondary" />
+            <div className="h-2 w-2/3 animate-pulse rounded bg-background-secondary" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function NewDbIllustrationCard({ item }: { item: IllustrationRecord }) {
+  return (
+    <article className="group cursor-pointer overflow-hidden rounded-xl border border-border bg-card transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]">
+      <div className="relative aspect-square border-b border-border bg-background-secondary">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={item.image_url}
+          alt={item.title}
+          className="h-full w-full object-contain"
+        />
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            downloadImageFromUrl(item.image_url, item.title);
+          }}
+          className="absolute bottom-1.5 right-1.5 rounded-md bg-foreground px-2 py-1 text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100"
+        >
+          DL
+        </button>
+      </div>
+      <div className="px-2.5 py-2">
+        <h3 className="mb-0.5 text-[11px] font-semibold leading-snug">{item.title}</h3>
+        <p className="text-[10px] text-muted-light">
+          {item.subject || item.sub_genre || item.genre}・{formatRelativeTime(item.created_at)}
+        </p>
+      </div>
+    </article>
+  );
+}
+
+function NewDbIllustrationGrid({ items }: { items: IllustrationRecord[] }) {
+  if (items.length === 0) {
+    return (
+      <p className="text-[13px] text-muted-light">
+        公開中のイラストはまだありません
+      </p>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+      {items.map((item) => (
+        <NewDbIllustrationCard key={item.id} item={item} />
+      ))}
+    </div>
+  );
+}
+
 function SectionLink({ href }: { href: string }) {
   return (
     <Link
@@ -129,15 +204,36 @@ export default function Home() {
   const [action, setAction] = useState("");
   const [subject, setSubject] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [generatedResult, setGeneratedResult] = useState<GeneratedResult | null>(null);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const [searchAction, setSearchAction] = useState("");
   const [searchSubject, setSearchSubject] = useState("");
   const [currentCat, setCurrentCat] = useState<CategoryKey>("animal");
   const [currentTag, setCurrentTag] = useState<IllustrationTag>("スポーツ");
+  const [newDbItems, setNewDbItems] = useState<IllustrationRecord[]>([]);
+  const [newDbLoading, setNewDbLoading] = useState(true);
 
   const actionTrimmed = action.trim();
   const subjectTrimmed = subject.trim();
 
-  const newItems = useMemo(() => ILLUSTRATIONS.slice(0, 5), []);
+  useEffect(() => {
+    async function fetchNewIllustrations() {
+      setNewDbLoading(true);
+      const { data, error } = await supabase
+        .from("illustrations")
+        .select("id, title, image_url, genre, sub_genre, subject, created_at")
+        .eq("approved", true)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (!error && data) {
+        setNewDbItems(data as IllustrationRecord[]);
+      }
+      setNewDbLoading(false);
+    }
+
+    fetchNewIllustrations();
+  }, [generatedResult]);
 
   const categoryItems = useMemo(() => {
     if (currentCat !== "animal") return [];
@@ -169,16 +265,44 @@ export default function Home() {
       </>
     );
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!actionTrimmed || !subjectTrimmed) {
       alert("行動と対象を両方入力してください");
       return;
     }
+
     setGenerating(true);
-    setTimeout(() => {
+    setGenerateError(null);
+    setGeneratedResult(null);
+
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: actionTrimmed,
+          subject: subjectTrimmed,
+        }),
+      });
+
+      const data = (await response.json()) as GeneratedResult & { error?: string };
+
+      if (!response.ok || !data.image_url) {
+        setGenerateError(
+          data.error || "生成に失敗しました。もう一度お試しください。",
+        );
+        return;
+      }
+
+      setGeneratedResult({
+        title: data.title,
+        image_url: data.image_url,
+      });
+    } catch {
+      setGenerateError("生成に失敗しました。もう一度お試しください。");
+    } finally {
       setGenerating(false);
-      alert(`「${actionTrimmed} ${subjectTrimmed}」のイラストを生成しました！`);
-    }, 2000);
+    }
   };
 
   const handleChipClick = (chip: (typeof SAMPLE_CHIPS)[number]) => {
@@ -225,7 +349,11 @@ export default function Home() {
           <p className="mb-4 text-xs text-muted-light">
             作ったイラストは管理人の承認後に掲載されます。毎日23時頃に更新しています。
           </p>
-          <IllustrationGrid items={newItems} />
+          {newDbLoading ? (
+            <NewIllustrationSkeletonGrid />
+          ) : (
+            <NewDbIllustrationGrid items={newDbItems} />
+          )}
         </section>
 
         <hr className="border-0 border-t border-border" />
@@ -440,6 +568,36 @@ export default function Home() {
               ))}
             </div>
           </div>
+
+          {generateError && (
+            <p className="mt-4 max-w-[600px] text-center text-sm text-red-600">{generateError}</p>
+          )}
+
+          {generatedResult && (
+            <div className="mt-6 max-w-[600px] rounded-xl border border-border bg-card p-6">
+              <div className="overflow-hidden rounded-xl border border-border bg-background-secondary">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={generatedResult.image_url}
+                  alt={generatedResult.title}
+                  className="mx-auto block max-h-[320px] w-full object-contain"
+                />
+              </div>
+              <h3 className="mt-4 text-base font-bold">{generatedResult.title}</h3>
+              <p className="mt-2 text-xs text-muted-light">
+                承認後に新着イラストに掲載されます
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  downloadImageFromUrl(generatedResult.image_url, generatedResult.title)
+                }
+                className="mt-4 w-full rounded-[var(--radius-sm)] border border-foreground bg-transparent py-3 text-sm font-semibold text-foreground transition-colors hover:bg-foreground hover:text-white"
+              >
+                ⬇ ダウンロード
+              </button>
+            </div>
+          )}
         </section>
 
         <section id="how-to" className="bg-foreground px-4 py-12 sm:px-7">

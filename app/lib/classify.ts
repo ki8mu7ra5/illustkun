@@ -1,21 +1,19 @@
-import type { IllustrationTag } from "./illustrations";
+export const IMAGE_CLASSIFY_PROMPT = `この画像を見て、以下のJSONのみ返してください。説明不要。
+{
+  "genre": "大ジャンル（動物・食べ物・乗り物など）",
+  "sub_genre": "サブジャンル（犬・猫・鳥など）",
+  "action": "行動（勉強・料理・スポーツなど）",
+  "tags": ["タグ1", "タグ2", "タグ3"],
+  "description": "30文字以内の説明文"
+}
+タグのルール：動物名は漢字優先（猫・犬・熊）、
+漢字がない場合はカタカナ（ハムスター・ペンギン）、
+ひらがなは使わない`;
 
-export const CLASSIFY_PROMPT = `あなたはイラストの行動・対象タグを分類するアシスタントです。
-ユーザーが入力した「何をしている？」「何が？」から、行動カテゴリと表示用タグを決定してください。
-
-行動カテゴリは次のいずれか1つ：
-- スポーツ（サッカー・スキー・運動など）
-- 食べる（食事・料理・コーヒーなど）
-- 乗り物（運転・電車・自転車など）
-- 勉強（勉強・読書・仕事など）
-- 音楽（ピアノ・将棋・楽器など）
-- 生活（上記に当てはまらない日常行動）
-
-タグの表記ルール：
-- 動物名は漢字優先（猫・犬・熊・狐・鰐）
-- 漢字がない場合はカタカナ（ハムスター・ペンギン・コアラ）
-- ひらがなは使わない
-- 行動タグも漢字優先（勉強・料理・読書・運転）
-`;
-
-export type { IllustrationTag };
+export type ImageClassification = {
+  genre: string;
+  sub_genre: string;
+  action: string;
+  tags: string[];
+  description: string;
+};

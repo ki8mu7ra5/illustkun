@@ -128,7 +128,7 @@ export default function Home() {
               <span className="mt-1 block text-accent-hover">イラスト集</span>
             </h1>
             <p className="mt-4 text-sm text-muted sm:text-base">
-              好きな組み合わせを入力するだけ。あなただけのイラストが生まれます。
+              好きな組み合わせを入力すると、世界に１つだけのイラストが生まれます。作ったイラストは「新着イラスト」で公開され、この世界の誰かが使うかもしれません。
             </p>
           </div>
 

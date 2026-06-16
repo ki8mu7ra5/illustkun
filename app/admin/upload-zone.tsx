@@ -35,7 +35,20 @@ export function AdminUploadZone({ password, onUploaded }: AdminUploadZoneProps) 
           headers: { "x-admin-password": password },
           body: formData,
         });
-        const result = await response.json();
+
+        const raw = await response.text();
+        let result: { error?: string; data?: { title?: string }[] } = {};
+        if (raw) {
+          try {
+            result = JSON.parse(raw) as typeof result;
+          } catch {
+            throw new Error(
+              response.ok
+                ? "サーバーから不正な応答が返されました"
+                : `アップロードに失敗しました (${response.status})`,
+            );
+          }
+        }
 
         if (!response.ok) {
           throw new Error(result.error || "アップロードに失敗しました");

@@ -50,5 +50,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*"],
+  // /api/admin は各 Route Handler の x-admin-password 認証に任せる
+  matcher: ["/admin/:path*"],
 };

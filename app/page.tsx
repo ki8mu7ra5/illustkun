@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { GenerateLoadingScreen } from "./components/generate-loading-screen";
+import { GenerateResultScreen } from "./components/generate-result-screen";
 import { RankingList } from "./components/ranking-list";
 import { SiteFooter } from "./components/site-footer";
 import { SiteHeader } from "./components/site-header";
-import { downloadImageFromUrl } from "./lib/download";
 import { buildCategoryHref } from "./lib/filter-illustrations";
 import {
   CATEGORY_GENRE_VALUES,
@@ -339,6 +340,7 @@ export default function Home() {
     setGenerating(true);
     setGenerateError(null);
     setGeneratedResult(null);
+    document.getElementById("generate")?.scrollIntoView({ behavior: "smooth" });
 
     try {
       const response = await fetch("/api/generate", {
@@ -597,112 +599,99 @@ export default function Home() {
           <p className="mb-4 text-xs text-muted-light">
             欲しいイラストが見つからないときはAIに作ってもらおう。
           </p>
-          <div className="max-w-[600px] rounded-xl border border-border bg-card p-7">
-            <div className="mb-1.5 text-base font-bold">欲しいイラストを入力してください</div>
-            <p className="mb-5 text-[13px] text-muted">
-              「何をしている？」＋「何が？」の2項目だけ。プロンプトの知識は不要です。
-            </p>
-            <div className="mb-3.5 grid grid-cols-1 items-center gap-2.5 sm:grid-cols-[1fr_auto_1fr]">
-              <div>
-                <label
-                  htmlFor="action"
-                  className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-light"
-                >
-                  何をしている？
-                </label>
-                <input
-                  id="action"
-                  type="text"
-                  value={action}
-                  onChange={(e) => setAction(e.target.value)}
-                  placeholder="電車を運転している"
-                  className="w-full rounded-[var(--radius-sm)] border-[1.5px] border-border bg-background px-3 py-2.5 text-sm outline-none transition-[border-color,background] focus:border-accent-dark focus:bg-card"
-                />
-                <span className="mt-1 block text-[11px] text-muted-light">
-                  例：サッカーをしている　本を読んでいる
-                </span>
-              </div>
-              <div className="hidden text-center text-xl font-light text-muted-light sm:block">
-                ×
-              </div>
-              <div>
-                <label
-                  htmlFor="subject"
-                  className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-light"
-                >
-                  何が？
-                </label>
-                <input
-                  id="subject"
-                  type="text"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="ネコ"
-                  className="w-full rounded-[var(--radius-sm)] border-[1.5px] border-border bg-background px-3 py-2.5 text-sm outline-none transition-[border-color,background] focus:border-accent-dark focus:bg-card"
-                />
-                <span className="mt-1 block text-[11px] text-muted-light">
-                  例：ハムスター　ゴリラ　ワニ
-                </span>
-              </div>
-            </div>
-            <div className="mb-3.5 min-h-6 text-center text-[13px] text-muted">
-              {previewText}
-            </div>
-            <button
-              type="button"
-              onClick={handleGenerate}
-              disabled={generating}
-              className="w-full rounded-[var(--radius-sm)] bg-foreground py-3.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {generating
-                ? "⏳ 生成中..."
-                : "✦ このイラストをAIで生成する（無料）"}
-            </button>
-            <p className="mt-2.5 text-center text-[11px] text-muted-light">
-              生成したイラストは承認後にサイトに追加され、みんなが使えるようになります
-            </p>
-            <div className="mt-3.5 flex flex-wrap gap-1.5">
-              {SAMPLE_CHIPS.map((chip) => (
-                <button
-                  key={chip.label}
-                  type="button"
-                  onClick={() => handleChipClick(chip)}
-                  className="cursor-pointer rounded-full border border-border bg-background-secondary px-3 py-1.5 text-xs text-muted transition-all hover:border-foreground hover:bg-foreground hover:text-white"
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {generateError && (
-            <p className="mt-4 max-w-[600px] text-center text-sm text-red-600">{generateError}</p>
-          )}
-
-          {generatedResult && (
-            <div className="mt-6 max-w-[600px] rounded-xl border border-border bg-card p-6">
-              <div className="overflow-hidden rounded-xl border border-border bg-background-secondary">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={generatedResult.image_url}
-                  alt={generatedResult.title}
-                  className="mx-auto block max-h-[320px] w-full object-contain"
-                />
-              </div>
-              <h3 className="mt-4 text-base font-bold">{generatedResult.title}</h3>
-              <p className="mt-2 text-xs text-muted-light">
-                承認後に新着イラストに掲載されます
+          {generating ? (
+            <GenerateLoadingScreen
+              active={generating}
+              title={`${actionTrimmed} ${subjectTrimmed}`}
+            />
+          ) : generatedResult ? (
+            <GenerateResultScreen
+              title={generatedResult.title}
+              imageUrl={generatedResult.image_url}
+              onCreateAnother={() => {
+                setGeneratedResult(null);
+                setGenerateError(null);
+              }}
+            />
+          ) : (
+            <div className="max-w-[600px] rounded-xl border border-border bg-card p-7">
+              <div className="mb-1.5 text-base font-bold">欲しいイラストを入力してください</div>
+              <p className="mb-5 text-[13px] text-muted">
+                「何をしている？」＋「何が？」の2項目だけ。プロンプトの知識は不要です。
               </p>
+              <div className="mb-3.5 grid grid-cols-1 items-center gap-2.5 sm:grid-cols-[1fr_auto_1fr]">
+                <div>
+                  <label
+                    htmlFor="action"
+                    className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-light"
+                  >
+                    何をしている？
+                  </label>
+                  <input
+                    id="action"
+                    type="text"
+                    value={action}
+                    onChange={(e) => setAction(e.target.value)}
+                    placeholder="電車を運転している"
+                    className="w-full rounded-[var(--radius-sm)] border-[1.5px] border-border bg-background px-3 py-2.5 text-sm outline-none transition-[border-color,background] focus:border-accent-dark focus:bg-card"
+                  />
+                  <span className="mt-1 block text-[11px] text-muted-light">
+                    例：サッカーをしている　本を読んでいる
+                  </span>
+                </div>
+                <div className="hidden text-center text-xl font-light text-muted-light sm:block">
+                  ×
+                </div>
+                <div>
+                  <label
+                    htmlFor="subject"
+                    className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-light"
+                  >
+                    何が？
+                  </label>
+                  <input
+                    id="subject"
+                    type="text"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    placeholder="ネコ"
+                    className="w-full rounded-[var(--radius-sm)] border-[1.5px] border-border bg-background px-3 py-2.5 text-sm outline-none transition-[border-color,background] focus:border-accent-dark focus:bg-card"
+                  />
+                  <span className="mt-1 block text-[11px] text-muted-light">
+                    例：ハムスター　ゴリラ　ワニ
+                  </span>
+                </div>
+              </div>
+              <div className="mb-3.5 min-h-6 text-center text-[13px] text-muted">
+                {previewText}
+              </div>
               <button
                 type="button"
-                onClick={() =>
-                  downloadImageFromUrl(generatedResult.image_url, generatedResult.title)
-                }
-                className="mt-4 w-full rounded-[var(--radius-sm)] border border-foreground bg-transparent py-3 text-sm font-semibold text-foreground transition-colors hover:bg-foreground hover:text-white"
+                onClick={handleGenerate}
+                className="w-full rounded-[var(--radius-sm)] bg-foreground py-3.5 text-sm font-semibold text-white"
               >
-                ⬇ ダウンロード
+                ✦ このイラストをAIで生成する（無料）
               </button>
+              <p className="mt-2.5 text-center text-[11px] text-muted-light">
+                生成したイラストは承認後にサイトに追加され、みんなが使えるようになります
+              </p>
+              <div className="mt-3.5 flex flex-wrap gap-1.5">
+                {SAMPLE_CHIPS.map((chip) => (
+                  <button
+                    key={chip.label}
+                    type="button"
+                    onClick={() => handleChipClick(chip)}
+                    className="cursor-pointer rounded-full border border-border bg-background-secondary px-3 py-1.5 text-xs text-muted transition-all hover:border-foreground hover:bg-foreground hover:text-white"
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
             </div>
+          )}
+
+          {generateError && !generating && (
+            <p className="mt-4 max-w-[600px] text-center text-sm text-red-600">{generateError}</p>
           )}
         </section>
 

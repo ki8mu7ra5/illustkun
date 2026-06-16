@@ -8,14 +8,17 @@ import { SiteFooter } from "../components/site-footer";
 import { SiteHeader } from "../components/site-header";
 import {
   buildCategoryHref,
-  filterIllustrations,
   getCategoryPageMeta,
   parseCategorySearchParams,
   type CategoryFilter,
   type IllustrationFilters,
   type SortOption,
 } from "../lib/filter-illustrations";
-import { CATEGORY_CHIPS, ILLUSTRATIONS, TAG_FILTERS, type IllustrationTag } from "../lib/illustrations";
+import {
+  fetchApprovedIllustrationsList,
+  type IllustrationRecord,
+} from "../lib/illustration-db";
+import { CATEGORY_CHIPS, TAG_FILTERS, type IllustrationTag } from "../lib/illustrations";
 
 const PER_PAGE = 20;
 
@@ -23,6 +26,8 @@ export function CategoryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
+  const [items, setItems] = useState<IllustrationRecord[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const filters = useMemo(
     () => parseCategorySearchParams(searchParams),
@@ -33,20 +38,33 @@ export function CategoryContent() {
     setPage(1);
   }, [filters.action, filters.subject, filters.cat, filters.tags.join(","), filters.sort]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadIllustrations() {
+      setLoading(true);
+      const data = await fetchApprovedIllustrationsList(filters);
+      if (!cancelled) {
+        setItems(data);
+        setLoading(false);
+      }
+    }
+
+    loadIllustrations();
+    return () => {
+      cancelled = true;
+    };
+  }, [filters]);
+
   const pageMeta = useMemo(() => getCategoryPageMeta(filters), [filters]);
 
   useEffect(() => {
     document.title = `${pageMeta.title} - イラストくん`;
   }, [pageMeta.title]);
 
-  const filtered = useMemo(
-    () => filterIllustrations(ILLUSTRATIONS, filters),
-    [filters],
-  );
-
   const shown = useMemo(
-    () => filtered.slice(0, page * PER_PAGE),
-    [filtered, page],
+    () => items.slice(0, page * PER_PAGE),
+    [items, page],
   );
 
   const highlightKeywords = [filters.action, filters.subject].filter(Boolean);
@@ -191,7 +209,7 @@ export function CategoryContent() {
 
         <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2">
           <p className="text-[13px] text-muted">
-            <strong className="font-bold text-foreground">{filtered.length}</strong>
+            <strong className="font-bold text-foreground">{items.length}</strong>
             件のイラスト
           </p>
           <select
@@ -204,7 +222,9 @@ export function CategoryContent() {
           </select>
         </div>
 
-        {shown.length > 0 ? (
+        {loading ? (
+          <p className="py-12 text-center text-sm text-muted-light">読み込み中…</p>
+        ) : shown.length > 0 ? (
           <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-5">
             {shown.map((item) => (
               <CategoryIllustrationCard
@@ -220,7 +240,7 @@ export function CategoryContent() {
           </p>
         )}
 
-        {filtered.length > shown.length && (
+        {!loading && items.length > shown.length && (
           <button
             type="button"
             onClick={() => setPage((p) => p + 1)}

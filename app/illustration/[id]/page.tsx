@@ -14,6 +14,8 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 
+export const revalidate = 0;
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const illustration = await fetchApprovedIllustration(id);

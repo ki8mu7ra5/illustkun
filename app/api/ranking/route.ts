@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { fetchMonthlyRanking } from "@/app/lib/illustration-db";
 
+export const revalidate = 0;
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const limit = Math.min(Math.max(Number(searchParams.get("limit") ?? "10"), 1), 10);

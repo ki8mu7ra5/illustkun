@@ -5,6 +5,8 @@ import { SiteFooter } from "@/app/components/site-footer";
 import { SiteHeader } from "@/app/components/site-header";
 import { fetchMonthlyRanking } from "@/app/lib/illustration-db";
 
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "ダウンロードランキング | イラストくん",
   description:

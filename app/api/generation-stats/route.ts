@@ -15,6 +15,8 @@ function getJstDayBounds(): { start: string; end: string } {
   };
 }
 
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const { start, end } = getJstDayBounds();

@@ -50,7 +50,7 @@ export function GenerationCounter({ refreshKey }: GenerationCounterProps) {
 
     async function fetchStats() {
       try {
-        const response = await fetch("/api/generation-stats");
+        const response = await fetch("/api/generation-stats", { cache: "no-store" });
         if (!response.ok) return;
         const data = (await response.json()) as GenerationStats;
         if (!cancelled) setStats(data);

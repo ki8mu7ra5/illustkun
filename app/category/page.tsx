@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { CategoryContent } from "./category-content";
 
+export const revalidate = 0;
+
 export default function CategoryPage() {
   return (
     <Suspense

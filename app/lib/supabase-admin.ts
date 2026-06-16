@@ -1,5 +1,8 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
+const noStoreFetch: typeof fetch = (input, init) =>
+  fetch(input, { ...init, cache: "no-store" });
+
 let _adminSupabase: SupabaseClient | null = null;
 
 function getAdminSupabase(): SupabaseClient {
@@ -11,7 +14,11 @@ function getAdminSupabase(): SupabaseClient {
         "SUPABASE_SERVICE_ROLE_KEY が設定されていません。.env.local を保存したあと、npm run dev を再起動してください。",
       );
     }
-    _adminSupabase = createClient(url, key);
+    _adminSupabase = createClient(url, key, {
+      global: {
+        fetch: noStoreFetch,
+      },
+    });
   }
   return _adminSupabase;
 }

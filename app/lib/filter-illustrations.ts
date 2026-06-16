@@ -38,7 +38,7 @@ export function filterIllustrations(
   if (filters.sort === "popular") {
     result = [...result].sort((a, b) => b.downloads - a.downloads);
   } else {
-    result = [...result].sort((a, b) => a.id - b.id);
+    result = [...result].sort((a, b) => b.id - a.id);
   }
 
   return result;

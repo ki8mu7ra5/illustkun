@@ -1,3 +1,4 @@
+import type { IllustrationFilters } from "@/app/lib/filter-illustrations";
 import { supabase } from "@/app/lib/supabase";
 
 export type IllustrationRecord = {
@@ -14,6 +15,9 @@ export type IllustrationRecord = {
   created_at: string;
   download_count: number;
 };
+
+const ILLUSTRATION_LIST_SELECT =
+  "id, title, image_url, genre, sub_genre, subject, action, tags, created_at, download_count";
 
 const GENRE_CATEGORY_MAP: Record<string, string> = {
   動物: "animal",
@@ -47,6 +51,54 @@ export const CATEGORY_GENRE_VALUES: Record<string, string[]> = {
   music: ["音楽", "music"],
 };
 
+export async function fetchApprovedIllustrationsList(
+  filters: Pick<IllustrationFilters, "cat" | "tags" | "action" | "subject" | "sort">,
+): Promise<IllustrationRecord[]> {
+  let query = supabase
+    .from("illustrations")
+    .select(ILLUSTRATION_LIST_SELECT)
+    .eq("approved", true);
+
+  if (filters.cat && filters.cat !== "new") {
+    const genres = CATEGORY_GENRE_VALUES[filters.cat] ?? [filters.cat];
+    query = query.in("genre", genres);
+  }
+
+  if (filters.tags.length > 0) {
+    query = query.overlaps("tags", filters.tags);
+  }
+
+  const actionTrimmed = filters.action.trim();
+  if (actionTrimmed) {
+    query = query.or(
+      `title.ilike.%${actionTrimmed}%,action.ilike.%${actionTrimmed}%`,
+    );
+  }
+
+  const subjectTrimmed = filters.subject.trim();
+  if (subjectTrimmed) {
+    query = query.or(
+      `title.ilike.%${subjectTrimmed}%,subject.ilike.%${subjectTrimmed}%`,
+    );
+  }
+
+  if (filters.sort === "popular") {
+    query = query
+      .order("download_count", { ascending: false })
+      .order("created_at", { ascending: false });
+  } else {
+    query = query.order("created_at", { ascending: false });
+  }
+
+  const { data, error } = await query;
+
+  if (error || !data) {
+    console.error("fetchApprovedIllustrationsList error:", error);
+    return [];
+  }
+
+  return data as IllustrationRecord[];
+}
 
 export async function fetchApprovedIllustration(
   id: string,

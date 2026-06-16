@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { RankingList } from "./components/ranking-list";
 import { SiteFooter } from "./components/site-footer";
 import { SiteHeader } from "./components/site-header";
 import { downloadImageFromUrl } from "./lib/download";
@@ -10,6 +11,7 @@ import {
   CATEGORY_GENRE_VALUES,
   formatRelativeTime,
   type IllustrationRecord,
+  type RankingIllustration,
 } from "./lib/illustration-db";
 import {
   TAG_FILTERS,
@@ -138,6 +140,19 @@ function NewDbIllustrationCard({ item }: { item: IllustrationRecord }) {
   );
 }
 
+function MiniRankingSkeleton() {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div
+          key={index}
+          className="h-[88px] animate-pulse rounded-2xl border border-border bg-card sm:h-[96px]"
+        />
+      ))}
+    </div>
+  );
+}
+
 function SectionLink({ href }: { href: string }) {
   return (
     <Link
@@ -167,6 +182,8 @@ export default function Home() {
   const [tagLoading, setTagLoading] = useState(true);
   const [keywordItems, setKeywordItems] = useState<IllustrationRecord[]>([]);
   const [keywordLoading, setKeywordLoading] = useState(false);
+  const [miniRanking, setMiniRanking] = useState<RankingIllustration[]>([]);
+  const [miniRankingLoading, setMiniRankingLoading] = useState(true);
 
   const actionTrimmed = action.trim();
   const subjectTrimmed = subject.trim();
@@ -191,6 +208,22 @@ export default function Home() {
     }
 
     fetchNewIllustrations();
+  }, [generatedResult]);
+
+  useEffect(() => {
+    async function fetchMiniRanking() {
+      setMiniRankingLoading(true);
+      const response = await fetch("/api/ranking?limit=3");
+      if (response.ok) {
+        const data = (await response.json()) as RankingIllustration[];
+        setMiniRanking(data);
+      } else {
+        setMiniRanking([]);
+      }
+      setMiniRankingLoading(false);
+    }
+
+    fetchMiniRanking();
   }, [generatedResult]);
 
   useEffect(() => {
@@ -392,6 +425,28 @@ export default function Home() {
             <NewIllustrationSkeletonGrid />
           ) : (
             <NewDbIllustrationGrid items={newDbItems} />
+          )}
+        </section>
+
+        <hr className="border-0 border-t border-border" />
+
+        <section id="ranking" className="mx-auto max-w-[1100px] px-4 py-10 sm:px-7">
+          <div className="mb-1.5 flex items-baseline justify-between">
+            <h2 className="text-lg font-bold tracking-tight">🏆 人気ランキング</h2>
+            <Link
+              href="/ranking"
+              className="rounded-full border border-border px-3.5 py-1 text-[13px] text-muted no-underline transition-colors hover:border-foreground hover:bg-foreground hover:text-white"
+            >
+              もっと見る→
+            </Link>
+          </div>
+          <p className="mb-4 text-xs text-muted-light">
+            過去1ヶ月のダウンロード数 TOP3
+          </p>
+          {miniRankingLoading ? (
+            <MiniRankingSkeleton />
+          ) : (
+            <RankingList items={miniRanking} compact />
           )}
         </section>
 

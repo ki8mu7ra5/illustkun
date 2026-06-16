@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { GenerateLoadingScreen } from "./components/generate-loading-screen";
 import { GenerateResultScreen } from "./components/generate-result-screen";
+import { GenerationCounter } from "./components/generation-counter";
 import { RankingList } from "./components/ranking-list";
 import { SiteFooter } from "./components/site-footer";
 import { SiteHeader } from "./components/site-header";
@@ -394,6 +395,7 @@ export default function Home() {
           >
             ✦ イラストを作る（無料）
           </button>
+          <GenerationCounter refreshKey={generatedResult?.image_url ?? null} />
           <br />
           <span className="mt-3 inline-block rounded-full border border-border bg-card px-3.5 py-1 text-xs text-muted-light">
             画像の生成・使用はすべて無料　商用利用OK

@@ -37,7 +37,16 @@ export function GenerateResultScreen({
 
       <button
         type="button"
-        onClick={() => downloadImageFromUrl(imageUrl, title)}
+        onClick={async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          try {
+            await downloadImageFromUrl(imageUrl, title);
+          } catch (error) {
+            console.error("Download failed:", error);
+            alert("ダウンロードに失敗しました。もう一度お試しください。");
+          }
+        }}
         className="mt-4 w-full rounded-[var(--radius-sm)] bg-foreground py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
       >
         ⬇ ダウンロード

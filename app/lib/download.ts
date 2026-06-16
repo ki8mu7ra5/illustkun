@@ -1,3 +1,8 @@
+function sanitizeDownloadFilename(title: string): string {
+  const sanitized = title.replace(/[\\/:*?"<>|]/g, "_").trim();
+  return sanitized || "illustration";
+}
+
 export function downloadIllustration(emoji: string, title: string) {
   const canvas = document.createElement("canvas");
   canvas.width = 512;
@@ -13,16 +18,30 @@ export function downloadIllustration(emoji: string, title: string) {
   ctx.fillText(emoji, 256, 256);
 
   const link = document.createElement("a");
-  link.download = `${title}.png`;
+  link.download = `${sanitizeDownloadFilename(title)}.png`;
   link.href = canvas.toDataURL("image/png");
+  document.body.appendChild(link);
   link.click();
+  document.body.removeChild(link);
 }
 
-export function downloadImageFromUrl(imageUrl: string, title: string) {
+export async function downloadImageFromUrl(imageUrl: string, title: string) {
+  const response = await fetch(imageUrl);
+  if (!response.ok) {
+    throw new Error("画像の取得に失敗しました");
+  }
+
+  const blob = await response.blob();
+  const blobUrl = URL.createObjectURL(blob);
+
   const link = document.createElement("a");
-  link.download = `${title}.png`;
-  link.href = imageUrl;
+  link.href = blobUrl;
+  link.download = `${sanitizeDownloadFilename(title)}.png`;
+  document.body.appendChild(link);
   link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(blobUrl);
 }
 
 export async function downloadIllustrationWithLog(
@@ -40,5 +59,5 @@ export async function downloadIllustrationWithLog(
     console.error("Download log failed:", error);
   }
 
-  downloadImageFromUrl(imageUrl, title);
+  await downloadImageFromUrl(imageUrl, title);
 }

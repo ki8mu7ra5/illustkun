@@ -62,6 +62,72 @@ export async function fetchApprovedIllustration(
   return data as IllustrationRecord;
 }
 
+export type RankingIllustration = IllustrationRecord & {
+  monthly_download_count: number;
+};
+
+export async function fetchMonthlyRanking(
+  limit = 10,
+): Promise<RankingIllustration[]> {
+  const { adminSupabase } = await import("@/app/lib/supabase-admin");
+
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+  const { data: logs, error: logsError } = await adminSupabase
+    .from("download_logs")
+    .select("illustration_id")
+    .gte("downloaded_at", oneMonthAgo.toISOString());
+
+  if (logsError || !logs || logs.length === 0) {
+    return [];
+  }
+
+  const monthlyCounts = new Map<string, number>();
+  for (const log of logs) {
+    const illustrationId = log.illustration_id as string;
+    monthlyCounts.set(
+      illustrationId,
+      (monthlyCounts.get(illustrationId) ?? 0) + 1,
+    );
+  }
+
+  const topEntries = [...monthlyCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit);
+
+  if (topEntries.length === 0) {
+    return [];
+  }
+
+  const topIds = topEntries.map(([illustrationId]) => illustrationId);
+
+  const { data: illustrations, error: illustrationsError } = await adminSupabase
+    .from("illustrations")
+    .select("*")
+    .in("id", topIds)
+    .eq("approved", true);
+
+  if (illustrationsError || !illustrations) {
+    return [];
+  }
+
+  const illustrationMap = new Map(
+    (illustrations as IllustrationRecord[]).map((item) => [item.id, item]),
+  );
+
+  return topEntries
+    .map(([illustrationId, monthly_download_count]) => {
+      const illustration = illustrationMap.get(illustrationId);
+      if (!illustration) return null;
+      return {
+        ...illustration,
+        monthly_download_count,
+      };
+    })
+    .filter((item): item is RankingIllustration => item !== null);
+}
+
 export function formatRelativeTime(isoDate: string): string {
   const diffMs = Date.now() - new Date(isoDate).getTime();
   const minutes = Math.floor(diffMs / 60000);

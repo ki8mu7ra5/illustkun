@@ -115,6 +115,7 @@ export default async function IllustrationDetailPage({ params }: PageProps) {
             )}
 
             <DownloadButton
+              illustrationId={illustration.id}
               imageUrl={illustration.image_url}
               title={illustration.title}
             />

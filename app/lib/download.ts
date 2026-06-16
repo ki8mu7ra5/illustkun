@@ -24,3 +24,21 @@ export function downloadImageFromUrl(imageUrl: string, title: string) {
   link.href = imageUrl;
   link.click();
 }
+
+export async function downloadIllustrationWithLog(
+  illustrationId: string,
+  imageUrl: string,
+  title: string,
+) {
+  try {
+    await fetch("/api/download", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: illustrationId }),
+    });
+  } catch (error) {
+    console.error("Download log failed:", error);
+  }
+
+  downloadImageFromUrl(imageUrl, title);
+}

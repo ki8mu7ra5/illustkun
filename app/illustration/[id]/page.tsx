@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DownloadButton } from "@/app/illustration/[id]/download-button";
+import { ShareButtons } from "@/app/illustration/[id]/share-buttons";
 import { SiteFooter } from "@/app/components/site-footer";
 import { SiteHeader } from "@/app/components/site-header";
 import {
@@ -118,6 +119,11 @@ export default async function IllustrationDetailPage({ params }: PageProps) {
               illustrationId={illustration.id}
               imageUrl={illustration.image_url}
               title={illustration.title}
+            />
+
+            <ShareButtons
+              title={illustration.title}
+              imageUrl={illustration.image_url}
             />
 
             <div className="mt-6 rounded-xl border border-border bg-background-secondary p-4">

@@ -8,6 +8,7 @@ import {
   getPendingIllustrations,
   rejectIllustration,
 } from "@/app/admin/actions";
+import { AdminUploadZone } from "@/app/admin/upload-zone";
 import type { IllustrationRecord } from "@/app/lib/illustration-db";
 
 const ADMIN_PASSWORD_KEY = "illustkun_admin_password";
@@ -178,7 +179,7 @@ export default function AdminPage() {
         <div className="mx-auto flex max-w-[1100px] items-center justify-between px-4 py-3 sm:px-7">
           <div>
             <h1 className="text-lg font-bold">管理画面</h1>
-            <p className="text-xs text-muted-light">承認待ち・公開中イラスト</p>
+            <p className="text-xs text-muted-light">承認待ち・公開中・アップロード</p>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/" className="text-xs text-muted no-underline hover:text-foreground">
@@ -198,6 +199,13 @@ export default function AdminPage() {
       <main className="mx-auto max-w-[1100px] px-4 py-8 sm:px-7">
         {loading && <p className="text-sm text-muted">読み込み中…</p>}
         {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+
+        {storedPassword && (
+          <AdminUploadZone
+            password={storedPassword}
+            onUploaded={() => fetchAll(storedPassword)}
+          />
+        )}
 
         <section className="mb-12">
           <h2 className="mb-4 text-base font-bold">承認待ち</h2>

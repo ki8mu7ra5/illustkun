@@ -4,10 +4,7 @@ import {
   classifyImageWithClaude,
   fallbackClassification,
 } from "@/app/lib/classify-image";
-import {
-  getTitleFromFilename,
-  removeWhiteBackground,
-} from "@/app/lib/remove-white-background";
+import { getTitleFromFilename } from "@/app/lib/remove-white-background";
 import { adminSupabase } from "@/app/lib/supabase-admin";
 
 export const runtime = "nodejs";
@@ -32,8 +29,7 @@ export async function POST(request: Request) {
     }
 
     const title = getTitleFromFilename(file.name);
-    const inputBuffer = Buffer.from(await file.arrayBuffer());
-    const pngBuffer = await removeWhiteBackground(inputBuffer);
+    const pngBuffer = Buffer.from(await file.arrayBuffer());
     const base64Image = pngBuffer.toString("base64");
 
     const fileName = `${Date.now()}.png`;

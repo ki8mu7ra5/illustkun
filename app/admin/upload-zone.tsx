@@ -1,6 +1,10 @@
 "use client";
 
 import { useCallback, useRef, useState, type DragEvent } from "react";
+import {
+  getTitleFromFilename,
+  removeWhiteBackgroundFromFile,
+} from "@/app/lib/remove-white-background";
 
 type AdminUploadZoneProps = {
   password: string;
@@ -26,10 +30,16 @@ export function AdminUploadZone({ password, onUploaded }: AdminUploadZoneProps) 
       setError(null);
       setMessage(null);
 
-      const formData = new FormData();
-      formData.append("file", file);
-
       try {
+        const title = getTitleFromFilename(file.name);
+        const processedBlob = await removeWhiteBackgroundFromFile(file);
+        const processedFile = new File([processedBlob], `${title}.png`, {
+          type: "image/png",
+        });
+
+        const formData = new FormData();
+        formData.append("file", processedFile);
+
         const response = await fetch("/api/admin/upload", {
           method: "POST",
           headers: { "x-admin-password": password },

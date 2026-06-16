@@ -559,6 +559,9 @@ export default function Home() {
                 placeholder="ネコ、ワニ、ハムスター…"
                 className="w-full rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-[13px] outline-none transition-[border-color,background] focus:border-accent-dark focus:bg-card"
               />
+              <span className="mt-1 block text-[11px] text-muted-light">
+                漢字かカタカナで入力してください
+              </span>
             </div>
             <Link
               href={buildCategoryHref({

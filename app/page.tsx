@@ -25,14 +25,6 @@ import { supabase } from "./lib/supabase";
 const ILLUSTRATION_LIST_SELECT =
   "id, title, image_url, genre, sub_genre, subject, created_at";
 
-const SAMPLE_CHIPS = [
-  { action: "電車を運転している", subject: "猫", label: "電車を運転している猫" },
-  { action: "勉強している", subject: "ハムスター", label: "勉強しているハムスター" },
-  { action: "サッカーをしている", subject: "ワニ", label: "サッカーをしているワニ" },
-  { action: "将棋を指している", subject: "ゴリラ", label: "将棋を指しているゴリラ" },
-  { action: "スキーをしている", subject: "ペンギン", label: "スキーをしているペンギン" },
-];
-
 const STEPS = [
   {
     step: "Step 01",
@@ -379,11 +371,6 @@ export default function Home() {
     }
   };
 
-  const handleChipClick = (chip: (typeof SAMPLE_CHIPS)[number]) => {
-    setAction(chip.action);
-    setSubject(chip.subject);
-  };
-
   return (
     <div className="min-h-full bg-background text-foreground">
       <SiteHeader variant="home" />
@@ -675,18 +662,6 @@ export default function Home() {
               <p className="mt-2.5 text-center text-[11px] text-muted-light">
                 生成したイラストは承認後にサイトに追加され、みんなが使えるようになります
               </p>
-              <div className="mt-3.5 flex flex-wrap gap-1.5">
-                {SAMPLE_CHIPS.map((chip) => (
-                  <button
-                    key={chip.label}
-                    type="button"
-                    onClick={() => handleChipClick(chip)}
-                    className="cursor-pointer rounded-full border border-border bg-background-secondary px-3 py-1.5 text-xs text-muted transition-all hover:border-foreground hover:bg-foreground hover:text-white"
-                  >
-                    {chip.label}
-                  </button>
-                ))}
-              </div>
             </div>
           )}
 

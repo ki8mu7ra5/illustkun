@@ -53,20 +53,29 @@ export const TAG_FILTERS: { key: IllustrationTag; label: string; emoji: string }
   { key: "生活", label: "生活・日常", emoji: "🏠" },
 ];
 
+export const CATEGORY_LABELS: Record<CategoryKey, string> = {
+  animal: "動物",
+  food: "食べ物",
+  vehicle: "乗り物",
+  plant: "植物",
+  person: "人物",
+  sports: "スポーツ",
+  music: "音楽",
+};
+
 export const CATEGORY_CHIPS: {
   key: CategoryKey | "";
   name: string;
   emoji: string;
-  soon: boolean;
 }[] = [
-  { key: "", name: "すべて", emoji: "", soon: false },
-  { key: "animal", name: "動物", emoji: "🐾", soon: false },
-  { key: "food", name: "食べ物", emoji: "🍜", soon: true },
-  { key: "vehicle", name: "乗り物", emoji: "🚃", soon: true },
-  { key: "plant", name: "植物", emoji: "🌿", soon: true },
-  { key: "person", name: "人物", emoji: "👤", soon: true },
-  { key: "sports", name: "スポーツ", emoji: "⚽", soon: true },
-  { key: "music", name: "音楽", emoji: "🎵", soon: true },
+  { key: "", name: "すべて", emoji: "" },
+  { key: "animal", name: "動物", emoji: "🐾" },
+  { key: "food", name: "食べ物", emoji: "🍜" },
+  { key: "vehicle", name: "乗り物", emoji: "🚃" },
+  { key: "plant", name: "植物", emoji: "🌿" },
+  { key: "person", name: "人物", emoji: "👤" },
+  { key: "sports", name: "スポーツ", emoji: "⚽" },
+  { key: "music", name: "音楽", emoji: "🎵" },
 ];
 
 export const TOP_CATEGORY_CHIPS = CATEGORY_CHIPS.filter(

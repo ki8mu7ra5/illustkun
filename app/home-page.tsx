@@ -454,23 +454,15 @@ export default function HomePage() {
               <button
                 key={category.key}
                 type="button"
-                disabled={category.soon}
-                onClick={() => !category.soon && setCurrentCat(category.key)}
+                onClick={() => setCurrentCat(category.key)}
                 className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-[13px] transition-colors ${
-                  category.soon
-                    ? "cursor-default border-border bg-card opacity-40"
-                    : currentCat === category.key
-                      ? "border-foreground bg-foreground text-white"
-                      : "cursor-pointer border-border bg-card hover:border-foreground hover:bg-foreground hover:text-white"
+                  currentCat === category.key
+                    ? "border-foreground bg-foreground text-white"
+                    : "cursor-pointer border-border bg-card hover:border-foreground hover:bg-foreground hover:text-white"
                 }`}
               >
                 <span>{category.emoji}</span>
                 {category.name}
-                {category.soon && (
-                  <span className="ml-0.5 rounded-full bg-background-secondary px-1.5 py-px text-[10px] text-muted-light">
-                    近日
-                  </span>
-                )}
               </button>
             ))}
           </div>

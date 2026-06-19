@@ -1,4 +1,5 @@
 import type { CategoryKey, Illustration, IllustrationTag } from "./illustrations";
+import { CATEGORY_LABELS } from "./illustrations";
 import { normalize } from "./normalize";
 
 export type SortOption = "new" | "popular";
@@ -71,12 +72,12 @@ export function parseCategorySearchParams(
 }
 
 export function getCategoryPageMeta(filters: IllustrationFilters) {
-  const catNames: Record<string, string> = {
-    animal: "動物",
-    new: "新着",
-    "": "すべて",
-  };
-  const catName = catNames[filters.cat] || "すべて";
+  const catName =
+    filters.cat === "new"
+      ? "新着"
+      : filters.cat === ""
+        ? "すべて"
+        : CATEGORY_LABELS[filters.cat as CategoryKey] ?? "すべて";
   const tagStr = filters.tags.length ? filters.tags.join("・") : "";
   let title = `${catName}のイラスト一覧`;
   if (tagStr) title += `（${tagStr}）`;

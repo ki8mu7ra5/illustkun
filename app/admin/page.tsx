@@ -8,34 +8,11 @@ import {
   getPendingIllustrations,
   rejectIllustration,
 } from "@/app/admin/actions";
+import { IllustrationEditForm } from "@/app/admin/illustration-edit-form";
 import { AdminUploadZone } from "@/app/admin/upload-zone";
 import type { IllustrationRecord } from "@/app/lib/illustration-db";
 
 const ADMIN_PASSWORD_KEY = "illustkun_admin_password";
-
-function IllustrationMeta({ item }: { item: IllustrationRecord }) {
-  return (
-    <>
-      <h2 className="mb-1 text-sm font-bold">{item.title}</h2>
-      <p className="mb-1 text-xs text-muted">
-        ジャンル: {item.genre}
-        {item.sub_genre ? ` / ${item.sub_genre}` : ""}
-      </p>
-      {item.tags && item.tags.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-1">
-          {item.tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded bg-accent/30 px-2 py-0.5 text-[10px] text-foreground"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-    </>
-  );
-}
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");
@@ -143,6 +120,16 @@ export default function AdminPage() {
     setProcessingId(null);
   };
 
+  const handlePendingUpdated = (updated: IllustrationRecord) => {
+    setItems((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+  };
+
+  const handleApprovedUpdated = (updated: IllustrationRecord) => {
+    setApprovedItems((prev) =>
+      prev.map((item) => (item.id === updated.id ? updated : item)),
+    );
+  };
+
   if (!storedPassword) {
     return (
       <div className="flex min-h-full items-center justify-center bg-background px-4">
@@ -231,11 +218,15 @@ export default function AdminPage() {
                   />
                 </div>
                 <div className="p-4">
-                  <IllustrationMeta item={item} />
-                  {item.description && (
-                    <p className="mb-3 text-xs text-muted-light">{item.description}</p>
+                  {storedPassword && (
+                    <IllustrationEditForm
+                      item={item}
+                      password={storedPassword}
+                      disabled={processingId === item.id}
+                      onUpdated={handlePendingUpdated}
+                    />
                   )}
-                  <div className="flex gap-2">
+                  <div className="mt-3 flex gap-2">
                     <button
                       type="button"
                       disabled={processingId === item.id}
@@ -283,12 +274,19 @@ export default function AdminPage() {
                   />
                 </div>
                 <div className="p-4">
-                  <IllustrationMeta item={item} />
+                  {storedPassword && (
+                    <IllustrationEditForm
+                      item={item}
+                      password={storedPassword}
+                      disabled={processingId === item.id}
+                      onUpdated={handleApprovedUpdated}
+                    />
+                  )}
                   <button
                     type="button"
                     disabled={processingId === item.id}
                     onClick={() => handleDeleteApproved(item.id)}
-                    className="w-full rounded-[var(--radius-sm)] border border-border py-2 text-xs font-semibold text-muted hover:border-red-400 hover:text-red-600 disabled:opacity-50"
+                    className="mt-3 w-full rounded-[var(--radius-sm)] border border-border py-2 text-xs font-semibold text-muted hover:border-red-400 hover:text-red-600 disabled:opacity-50"
                   >
                     削除
                   </button>
